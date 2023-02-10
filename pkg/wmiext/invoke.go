@@ -4,7 +4,6 @@
 package wmiext
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/drtimf/wmi"
@@ -113,20 +112,6 @@ func BeginInvoke(service *wmi.Service, obj *wmi.Instance, method string) *Method
 	var class, inParam *wmi.Instance
 	if class, err = GetClassInstance(service, obj); err == nil {
 		inParam, err = class.GetMethodParameters(method)
-		class.Close()
-	}
-
-	return &MethodExecutor{method: method, path: objPath, service: service, inParam: inParam, err: err}
-}
-
-func BeginPathInvoke(service *wmi.Service, classPath string, objPath string, method string) *MethodExecutor {
-	var err error
-	var class, inParam *wmi.Instance
-	if class, err = service.GetObject(classPath); err == nil {
-		fmt.Printf("\n debug: %v, %v\n", class, err)
-		inParam, err = class.GetMethodParameters(method)
-		fmt.Printf("\n debug: %v, %v\n", inParam, err)
-
 		class.Close()
 	}
 
