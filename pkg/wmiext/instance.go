@@ -4,6 +4,8 @@
 package wmiext
 
 import (
+	"errors"
+	"fmt"
 	"syscall"
 	"unsafe"
 
@@ -58,7 +60,7 @@ func GetSingletonInstance(service *wmi.Service, className string) (*wmi.Instance
 	return instance, nil
 }
 
-func FindFirstObject(service *wmi.Service, wql string) (*wmi.Instance, error) {
+func FindFirstInstance(service *wmi.Service, wql string) (*wmi.Instance, error) {
 	var enum *wmi.Enum
 	var err error
 	if enum, err = service.ExecQuery(wql); err != nil {
@@ -69,7 +71,32 @@ func FindFirstObject(service *wmi.Service, wql string) (*wmi.Instance, error) {
 	return enum.Next()
 }
 
-func SpawnObject(service *wmi.Service, className string) (*wmi.Instance, error) {
+func FindFirstRelatedInstance(service *wmi.Service, objPath string, className string) (*wmi.Instance, error) {
+	wql := fmt.Sprintf("ASSOCIATORS OF {%s} WHERE ResultClass = %s", objPath, className)
+	return FindFirstInstance(service, wql)
+}
+
+func FindFirstObject(service *wmi.Service, wql string, target interface{}) error {
+	var enum *wmi.Enum
+	var err error
+	if enum, err = service.ExecQuery(wql); err != nil {
+		return err
+	}
+	defer enum.Close()
+
+	done, err := NextObjectWithPath(enum, target)
+	if err != nil {
+		return err
+	}
+
+	if done {
+		return errors.New("no results found")
+	}
+
+	return nil
+}
+
+func SpawnInstance(service *wmi.Service, className string) (*wmi.Instance, error) {
 	var class *wmi.Instance
 	var err error
 	if class, err = service.GetObject(className); err != nil {

@@ -4,9 +4,12 @@
 package hypervctl
 
 import (
+	"encoding/xml"
 	"fmt"
-	"github.com/n1hility/hypervctl/pkg/wmiext"
+	"io"
+	"strings"
 
+	"github.com/n1hility/hypervctl/pkg/wmiext"
 	"github.com/drtimf/wmi"
 )
 
@@ -80,6 +83,19 @@ type VirtualMachine struct {
 	LastReplicationTime                      string
 	LastSuccessfulBackupTime                 string
 	EnhancedSessionModeState                 uint16
+}
+
+type CimKvpItems struct {
+	Instances []CimKvpItem `xml:"INSTANCE"`
+}
+
+type CimKvpItem struct {
+	Properties []CimKvpItemProperty `xml:"PROPERTY"`
+}
+
+type CimKvpItemProperty struct {
+	Name string `xml:"NAME,attr"`
+	Value string `xml:"VALUE"`
 }
 
 type KvpError struct {
@@ -175,6 +191,75 @@ func (vm *VirtualMachine) RemoveKeyValuePair(key string) error {
 	return vm.kvpOperation("RemoveKvpItems", key, "", "key invalid?")
 }
 
+func (vm *VirtualMachine) GetKeyValuePairs() (map[string]string, error) {
+	var service *wmi.Service
+	var err error
+
+	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+		return nil, err
+	}
+
+	defer service.Close()
+
+	i, err := wmiext.FindFirstRelatedInstance(service, vm.S__PATH, "Msvm_KvpExchangeComponent")
+	if err != nil {
+		fmt.Println("Fail ex1")
+		return nil, err
+	}
+
+	defer i.Close()
+
+	var path string
+	path, err = i.GetPropertyAsString("__PATH")
+	if err != nil {
+		fmt.Println("Fail oath")
+		return nil, err
+
+	}
+
+	i, err = wmiext.FindFirstRelatedInstance(service, path, "Msvm_KvpExchangeComponentSettingData")
+	if err != nil {
+		fmt.Println("Fail second")
+
+		return nil, err
+	}
+	defer i.Close()
+
+	s, err := i.GetPropertyAsString("HostExchangeItems")
+	if err != nil {
+		return nil, err
+	}	
+
+	// Workaround XML decoder's inability to handle multiple root elements
+	r := io.MultiReader(
+		strings.NewReader("<root>"),
+		strings.NewReader(s),
+		strings.NewReader("</root>"),
+	)
+
+	var items CimKvpItems
+	if err = xml.NewDecoder(r).Decode(&items); err != nil {
+		return nil, err
+	}
+
+	ret := make(map[string]string)
+	for _, item := range items.Instances {
+		var key, value string
+		for _, prop := range item.Properties {
+			if strings.EqualFold(prop.Name, "Name") {
+				key = prop.Value
+			} else if strings.EqualFold(prop.Name, "Data") {
+				value = prop.Value
+			}
+		}
+		if len(key) > 0 {
+			ret[key] = value
+		}
+	}
+
+	return ret, nil
+}
+
 func (vm *VirtualMachine) kvpOperation(op string, key string, value string, illegalSuggestion string) error {
 	var service *wmi.Service
 	var vsms, job *wmi.Instance
@@ -208,7 +293,7 @@ func (vm *VirtualMachine) kvpOperation(op string, key string, value string, ille
 }
 
 func createItem(service *wmi.Service, key string, value string) string {
-	item, err := wmiext.SpawnObject(service, KvpExchangeDataItemName)
+	item, err := wmiext.SpawnInstance(service, KvpExchangeDataItemName)
 	if err != nil {
 		panic(err)
 	}

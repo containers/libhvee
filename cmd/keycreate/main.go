@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 	"time"
+
 	"github.com/n1hility/hypervctl/pkg/wmiext"
 
 	"github.com/drtimf/wmi"
@@ -22,7 +23,7 @@ func main() {
 	}
 	defer service.Close()
 
-	item, err := wmiext.SpawnObject(service, "Msvm_KvpExchangeDataItem")
+	item, err := wmiext.SpawnInstance(service, "Msvm_KvpExchangeDataItem")
 	if err != nil {
 		panic(err)
 	}
@@ -40,7 +41,7 @@ func main() {
 
 	const wql = "Select * From Msvm_ComputerSystem Where ElementName='%s'"
 
-	computerSystem, err := wmiext.FindFirstObject(service, fmt.Sprintf(wql, "New Virtual Machine"))
+	computerSystem, err := wmiext.FindFirstInstance(service, fmt.Sprintf(wql, "New Virtual Machine"))
 	if err != nil {
 		panic(err)
 	}
