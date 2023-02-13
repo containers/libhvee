@@ -6,10 +6,10 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/containers/libhivee/pkg/ignition"
 	"os"
 
-	"github.com/containers/libhivee/pkg/hypervctl"
+	"github.com/containers/libhvee/pkg/ignition"
+	"github.com/containers/libhvee/pkg/hypervctl"
 )
 
 func main() {

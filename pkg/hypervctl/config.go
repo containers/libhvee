@@ -2,7 +2,7 @@ package hypervctl
 
 import (
 	"fmt"
-	"github.com/containers/libhivee/pkg/wmiext"
+	"github.com/containers/libhvee/pkg/wmiext"
 	"github.com/drtimf/wmi"
 )
 

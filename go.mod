@@ -1,4 +1,4 @@
-module github.com/containers/libhivee
+module github.com/containers/libhvee
 
 go 1.19
 
