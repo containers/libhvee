@@ -93,7 +93,10 @@ next:
 	}
 }
 
-func getIgnitionFromKVP() ([]byte, error) {
+// GetFromKvp reads the key value pairs from the wmi hyperv kernel device
+// looking for ignition specific keys.  it glues the values together and
+// returns as a []byte
+func GetFromKvp() ([]byte, error) {
 	ret, err := readKvpData()
 	if err != nil {
 		return nil, err
