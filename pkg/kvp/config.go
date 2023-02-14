@@ -1,19 +1,8 @@
-package ignition
+package kvp
 
-import "errors"
-
-const (
-	// kvpValueMaxLen is the maximum real-world length of bytes that can
-	// be stored in the value of the wmi key-value pair data exchange
-	kvpValueMaxLen = int(990)
+import (
+	"errors"
 )
-
-// segment is a portion of an ignition file represented in a byte array
-type segment []byte
-
-// Segments is an array of byte arrays that together make up the entirety of
-// an ignition file.
-type Segments []segment
 
 var (
 	// ErrUnableToWriteToKVP is used when we are unable to write to the kernel
@@ -22,9 +11,9 @@ var (
 	// ErrUnableToReadFromKVP is used when we are unable to read from the kernel
 	// device for hyperv
 	ErrUnableToReadFromKVP = errors.New("failed to read from hv_kvp")
-	// ErrNoIgnitionKeysFound means we were unable to find key-value pairs as passed
+	// ErrNoKeyValuePairsFound means we were unable to find key-value pairs as passed
 	// from the hyperv host to this guest.
-	ErrNoIgnitionKeysFound = errors.New("unable to find ignition keys")
+	ErrNoKeyValuePairsFound = errors.New("unable to find kvp keys")
 )
 
 const (
@@ -38,13 +27,8 @@ const (
 	// KvpKernelDevice s the hyperv kernel device used for communicating key-values pairs
 	// on hyperv between the host and guest
 	KvpKernelDevice = "/dev/vmbus/hv_kvp"
-)
-
-var (
-	// Key represents the prefix key name for finding ignition file parts
-	// in the key value pairs.  it normally will have an integer added to the
-	// end when looking up keys sequentially
-	Key = "com_coreos_ignition_kvp_"
+	// DefaultKVPPoolID is where Windows host write to for Linux VMs
+	DefaultKVPPoolID = 0
 )
 
 type hvKvpExchgMsgValue struct {
@@ -77,4 +61,11 @@ type hvKvpMsgRet struct {
 	kvpSet hvKvpMsgSet
 	// unused is needed to get to the same struct size as the C version.
 	unused [4856]byte
+}
+
+type PoolID uint8
+
+type ValuePair struct {
+	Value string
+	Pool  PoolID
 }

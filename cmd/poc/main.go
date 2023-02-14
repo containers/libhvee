@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/containers/libhvee/pkg/ignition"
 	"github.com/containers/libhvee/pkg/hypervctl"
+	"github.com/containers/libhvee/pkg/kvp/ginsu"
 )
 
 func main() {
@@ -44,7 +44,7 @@ func main() {
 		verifyArgs("put", false)
 		err = vm.PutKeyValuePair(os.Args[3], os.Args[4])
 	case "add-ign":
-		err = addIgnFile(vm, os.Args[3])
+		err = addIgnFile(vm, os.Args[3], os.Args[4]) // yes, cheating
 	default:
 		fmt.Printf("Operation must be add, rm, edit, or put\n")
 		os.Exit(1)
@@ -56,17 +56,17 @@ func main() {
 	}
 }
 
-func addIgnFile(vm *hypervctl.VirtualMachine, name string) error {
-	b, err := os.ReadFile(name)
+func addIgnFile(vm *hypervctl.VirtualMachine, inputFilename, keyName string) error {
+	b, err := os.ReadFile(inputFilename)
 	if err != nil {
 		return err
 	}
-	parts, err := ignition.Dice(bytes.NewReader(b))
+	parts, err := ginsu.Dice(bytes.NewReader(b))
 	if err != nil {
 		return err
 	}
 	for i, v := range parts {
-		key := fmt.Sprintf("%s%d", ignition.Key, i)
+		key := fmt.Sprintf("%s%d", keyName, i)
 		if err := vm.AddKeyValuePair(key, string(v)); err != nil {
 			return err
 		}
