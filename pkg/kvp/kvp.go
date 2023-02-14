@@ -1,9 +1,11 @@
 //go:build linux
 
-package ignition
+package kvp
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 	"unsafe"
 
 	"golang.org/x/sys/unix"
@@ -11,9 +13,8 @@ import (
 
 // readKvpData reads all key-value pairs from the hyperv kernel device and creates
 // a map representation of them
-func readKvpData() (map[string]string, error) {
-	ret := make(map[string]string)
-
+func readKvpData() (map[string]ValuePair, error) {
+	ret := map[string]ValuePair{}
 	kvp, err := unix.Open(KvpKernelDevice, unix.O_RDWR|unix.O_CLOEXEC, 0)
 	if err != nil {
 		return nil, err
@@ -78,7 +79,10 @@ next:
 			// it is padded and key lookups fail
 			key := []byte(hvMsg.kvpSet.data.key[:hvMsg.kvpSet.data.keySize-1])
 			value := []byte(hvMsg.kvpSet.data.value[:hvMsg.kvpSet.data.valueSize-1])
-			ret[string(key)] = string(value)
+			ret[string(key)] = ValuePair{
+				Value: string(value),
+				Pool:  PoolID(hvMsg.kvpHdr.pool),
+			}
 		}
 
 		hvMsgRet.error = HvSOk
@@ -93,33 +97,49 @@ next:
 	}
 }
 
-// GetFromKvp reads the key value pairs from the wmi hyperv kernel device
-// looking for ignition specific keys.  it glues the values together and
-// returns as a []byte
-func GetFromKvp() ([]byte, error) {
-	ret, err := readKvpData()
-	if err != nil {
-		return nil, err
+// GetKeyValuePairs reads the key value pairs from the wmi hyperv kernel device
+// and returns them in map form.  the map value is a ValuePair which contains
+// the value string and the poolid
+func GetKeyValuePairs() (map[string]ValuePair, error) {
+	return readKvpData()
+}
+
+// GetSplitKeyValues "filters" KVPs looking for split values using a key and pool_id.  Returns the assembled
+// split values as a key as well as a new KVP that no longer has the split keys in question
+func GetSplitKeyValues(key string, pool PoolID, kvps map[string]ValuePair) (string, map[string]ValuePair, error) {
+	if len(kvps) < 1 {
+		return "", kvps, ErrNoKeyValuePairsFound
 	}
-	if len(ret) == 0 {
-		return []byte{}, nil
-	}
+
 	var (
-		counter int
-		parts   Segments
+		parts     []string
+		counter   = 0
+		leftOvers map[string]ValuePair
 	)
+
+	// Being extra diligent here
+	b, err := json.Marshal(kvps)
+	if err != nil {
+		return "", nil, err
+	}
+	if err := json.Unmarshal(b, &leftOvers); err != nil {
+		return "", nil, err
+	}
 	for {
-		lookForKey := fmt.Sprintf("%s%d", Key, counter)
-		val, exists := ret[lookForKey]
+		wantKey := fmt.Sprintf("%s%d", key, counter)
+		val, exists := leftOvers[wantKey]
 		if !exists {
 			break
 		}
-		parts = append(parts, []byte(val))
+		if exists && val.Pool == pool {
+			parts = append(parts, val.Value)
+			// Pop key/value from map
+			delete(leftOvers, wantKey)
+		}
 		counter++
 	}
 	if len(parts) < 1 {
-		return nil, ErrNoIgnitionKeysFound
+		return "", kvps, ErrNoKeyValuePairsFound
 	}
-	return Glue(parts), nil
-
+	return strings.Join(parts, ""), leftOvers, nil
 }
