@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+
 	"github.com/n1hility/hypervctl/pkg/hypervctl"
 )
 
@@ -28,6 +29,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf(string(b))
-
+	fmt.Println(string(b))
 }

@@ -89,13 +89,14 @@ func clearOperation(vm *hypervctl.VirtualMachine) error {
 
 	var mode uint32
 	err := windows.GetConsoleMode(handle, &mode)
-	if (err == nil) {
+	if err == nil {
 		// disable line input for single char reads
 		_ = windows.SetConsoleMode(handle, mode & ^lineInputModeFlag)
 		defer windows.SetConsoleMode(handle, mode)
+
 	}
 
-	loop:
+loop:
 	for {
 		b := make([]byte, 1)
 		n, err := os.Stdin.Read(b)
@@ -121,14 +122,14 @@ func clearOperation(vm *hypervctl.VirtualMachine) error {
 	}
 
 	count := 0
-	for key, _ := range pairs {
+	for key := range pairs {
 		err := vm.RemoveKeyValuePair(key)
 		if err != nil {
 			fmt.Printf("WARN: could not remove key %q\n", key)
 		} else {
 			fmt.Print(".")
 			count++
-			if count % 40 == 0 {
+			if count%40 == 0 {
 				fmt.Println()
 			}
 		}

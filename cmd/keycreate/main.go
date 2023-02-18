@@ -12,8 +12,6 @@ import (
 	"github.com/drtimf/wmi"
 )
 
-const something = "Select * From Msvm_ComputerSystem Where ElementName='New Virtual Machine'"
-
 func main() {
 	var service *wmi.Service
 	var err error
@@ -29,15 +27,18 @@ func main() {
 	}
 	defer item.Close()
 
-	item.Put("Name", "jkey-"+fmt.Sprintf("%d", time.Now().Unix()))
-	item.Put("Data", "jval-"+fmt.Sprintf("%d", time.Now().Unix()))
-	item.Put("Source", 0)
+	_ = item.Put("Name", "jkey-"+fmt.Sprintf("%d", time.Now().Unix()))
+	_ = item.Put("Data", "jval-"+fmt.Sprintf("%d", time.Now().Unix()))
+	_ = item.Put("Source", 0)
 
 	itemStr := wmiext.GetCimText(item)
 	fmt.Println(itemStr)
 
 	vmms, err := wmiext.GetSingletonInstance(service, "Msvm_VirtualSystemManagementService")
 	defer vmms.Close()
+	if err != nil {
+		panic(err)
+	}
 
 	const wql = "Select * From Msvm_ComputerSystem Where ElementName='%s'"
 
@@ -60,7 +61,7 @@ func main() {
 
 	e.Get("Job", &job)
 
-	e.End()
+	_ = e.End()
 	if err != nil {
 		panic(err)
 	}

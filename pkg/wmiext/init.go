@@ -22,6 +22,6 @@ func init() {
 	// IID_IWbemObjectTextSrc Obtain the initial locator to WMI
 	wmiWbemTxtLocator, err = ole.CreateInstance(clsidWbemObjectTextSrc, iidIWbemObjectTextSrc)
 	if err != nil {
-		logrus.Errorf("Could not initialize Wbem components, WMI operations will likely fail %w", err)
+		logrus.Errorf("Could not initialize Wbem components, WMI operations will likely fail %s", err.Error())
 	}
 }
