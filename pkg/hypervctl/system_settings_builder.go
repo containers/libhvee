@@ -1,7 +1,6 @@
 package hypervctl
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/drtimf/wmi"
@@ -12,74 +11,87 @@ type SystemSettingsBuilder struct {
 	systemSettings    *SystemSettings
 	processorSettings *ProcessorSettings
 	memorySettings    *MemorySettings
+	err               error
 }
 
 func NewSystemSettingsBuilder() *SystemSettingsBuilder {
 	return &SystemSettingsBuilder{}
 }
 
-func (builder *SystemSettingsBuilder) PrepareSystemSettings(name string) *SystemSettings {
-	settings := DefaultSystemSettings()
-	settings.ElementName = name
-	builder.systemSettings = settings
-	return settings
-}
-
-func (builder *SystemSettingsBuilder) PrepareProcessorSettings() (*ProcessorSettings, error) {
-	var err error
-	var settings *ProcessorSettings
-
-	if builder.processorSettings != nil {
-		return builder.processorSettings, nil
+func (builder *SystemSettingsBuilder) PrepareSystemSettings(name string, beforeAdd func(*SystemSettings)) *SystemSettingsBuilder {
+	if builder.err != nil {
+		return builder
 	}
 
-	settings, err = fetchDefaultProcessorSettings()
-	if err == nil {
+	if builder.systemSettings == nil {
+		settings := DefaultSystemSettings()
+		settings.ElementName = name
+		builder.systemSettings = settings
+	}
+
+	if beforeAdd != nil {
+		beforeAdd(builder.systemSettings)
+	}
+
+	return builder
+}
+
+func (builder *SystemSettingsBuilder) PrepareProcessorSettings(beforeAdd func(*ProcessorSettings)) *SystemSettingsBuilder {
+	if builder.err != nil {
+		return builder
+	}
+
+	if builder.processorSettings == nil {
+		settings, err := fetchDefaultProcessorSettings()
+		if err != nil {
+			builder.err = err
+			return builder
+		}
 		builder.processorSettings = settings
 	}
 
-	return settings, err
-}
-
-func (builder *SystemSettingsBuilder) PrepareMemorySettings() (*MemorySettings, error) {
-	var err error
-	var settings *MemorySettings
-
-	if builder.processorSettings != nil {
-		return builder.memorySettings, nil
+	if beforeAdd != nil {
+		beforeAdd(builder.processorSettings)
 	}
 
-	settings, err = fetchDefaultMemorySettings()
-	if err == nil {
+	return builder
+}
+
+func (builder *SystemSettingsBuilder) PrepareMemorySettings(beforeAdd func(*MemorySettings)) *SystemSettingsBuilder {
+	if builder.err != nil {
+		return builder
+	}
+
+	if builder.memorySettings == nil {
+		settings, err := fetchDefaultMemorySettings()
+		if err != nil {
+			builder.err = err
+			return builder
+		}
 		builder.memorySettings = settings
 	}
 
-	return settings, err
+	if beforeAdd != nil {
+		beforeAdd(builder.memorySettings)
+	}
+
+	return builder
 }
 
 func (builder *SystemSettingsBuilder) Build() (*SystemSettings, error) {
 	var service *wmi.Service
 	var err error
 
+	if builder.PrepareSystemSettings("unnamed-vm", nil).
+		PrepareProcessorSettings(nil).
+		PrepareMemorySettings(nil).err != nil {
+		return nil, err
+	}
+
 	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
 		return nil, err
 	}
 	defer service.Close()
-
-	systemSettings := builder.systemSettings
-	if systemSettings == nil {
-		return nil, errors.New("prepareSettings not called on builder")
-	}
-
-	processorSettings := builder.processorSettings
-	if processorSettings == nil {
-		return nil, errors.New("preparProcessorSettings not called on builder")
-	}
-
-	memorySettings := builder.memorySettings
-	if memorySettings == nil {
-		return nil, errors.New("prepareMemorySettings not called on builder")
-	}
 
 	systemSettingsInst, err := wmiext.SpawnInstance(service, "Msvm_VirtualSystemSettingData")
 	if err != nil {
@@ -87,17 +99,17 @@ func (builder *SystemSettingsBuilder) Build() (*SystemSettings, error) {
 	}
 	defer systemSettingsInst.Close()
 
-	err = wmiext.InstancePutAll(systemSettingsInst, systemSettings)
+	err = wmiext.InstancePutAll(systemSettingsInst, builder.systemSettings)
 	if err != nil {
 		return nil, err
 	}
 
-	memoryStr, err := createMemorySettings(memorySettings)
+	memoryStr, err := createMemorySettings(builder.memorySettings)
 	if err != nil {
 		return nil, err
 	}
 
-	processorStr, err := createProcessorSettings(processorSettings)
+	processorStr, err := createProcessorSettings(builder.processorSettings)
 	if err != nil {
 		return nil, err
 	}
@@ -139,9 +151,9 @@ func (builder *SystemSettingsBuilder) Build() (*SystemSettings, error) {
 		return nil, err
 	}
 
-	if err = wmiext.GetObjectAsObject(service, path, systemSettings); err != nil {
+	if err = wmiext.GetObjectAsObject(service, path, builder.systemSettings); err != nil {
 		return nil, err
 	}
 
-	return systemSettings, nil
+	return builder.systemSettings, nil
 }

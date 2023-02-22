@@ -21,8 +21,6 @@ func main() {
 	vhdxFile := abs(os.Args[2])
 	isoFile := abs(os.Args[3])
 
-
-
 	vmm := hypervctl.VirtualMachineManager{}
 
 	if fileExists(isoFile) {
@@ -36,72 +34,58 @@ func main() {
 		}
 	}
 
-	builder := hypervctl.NewSystemSettingsBuilder()
-
 	// System
-	_ = builder.PrepareSystemSettings(vmName)
-	memorySettings, err := builder.PrepareMemorySettings()
-	if err != nil {
-		panic(err)
-	}
+	systemSettings, err := hypervctl.NewSystemSettingsBuilder().
+		PrepareSystemSettings(vmName, nil).
+		PrepareMemorySettings(func(ms *hypervctl.MemorySettings) {
+			ms.DynamicMemoryEnabled = true
+			ms.VirtualQuantity = 8192 // Startup memory
+			ms.Reservation = 1024     // min
+			ms.Limit = 16384          // max
+		}).
+		PrepareProcessorSettings(func(ps *hypervctl.ProcessorSettings) {
+			ps.VirtualQuantity = 4 // 4 cores
+		}).
+		Build()
 
-	memorySettings.DynamicMemoryEnabled = true
-	memorySettings.VirtualQuantity = 8192 // Startup memory
-	memorySettings.Reservation = 1024     // min
-	memorySettings.Limit = 16384          // max
-
-	processor, err := builder.PrepareProcessorSettings()
-	if err != nil {
-		panic(err)
-	}
-
-	processor.VirtualQuantity = 4 // 4 cores
-
-	systemSettings, err := builder.Build()
 	if err != nil {
 		panic(err)
 	}
 
 	// Disks
-	controller, err := systemSettings.AddScsiController()
-	if err != nil {
-		panic(err)
-	}
 
-	diskDrive, err := controller.AddSyntheticDiskDrive(0)
-	if err != nil {
-		panic(err)
-	}
+	err = hypervctl.NewDriveSettingsBuilder(systemSettings).
+		AddScsiController().
+		AddSyntheticDiskDrive(0).
+		DefineVirtualHardDisk(vhdxFile, func(vhdss *hypervctl.VirtualHardDiskStorageSettings) {
+			// set extra params like
+			// vhdss.IOPSLimit = 5000
+		}).
+		Finish(). // disk
+		Finish(). // drive
+		AddSyntheticDvdDrive(1).
+		DefineVirtualDvdDisk(isoFile).
+		Finish(). // disk
+		Finish(). // drive
+		Finish(). // controller
+		Complete()
 
-	_, err = diskDrive.DefineVirtualHardDisk(vhdxFile, func(vhdss *hypervctl.VirtualHardDiskStorageSettings) {
-		// set extra params like
-		// vhdss.IOPSLimit = 5000
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	dvdDrive, err := controller.AddSyntheticDvdDrive(1)
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = dvdDrive.DefineVirtualDvdDisk(isoFile)
 	if err != nil {
 		panic(err)
 	}
 
 	// Network
-	port, err := systemSettings.AddSyntheticEthernetPort(nil)
+
+	err = hypervctl.NewNetworkSettingsBuilder(systemSettings).
+		AddSyntheticEthernetPort(nil).
+		AddEthernetPortAllocation(""). // "" = connect to default switch
+		Finish().                      // allocation
+		Finish().                      // port
+		Complete()
+
 	if err != nil {
 		panic(err)
 	}
-
-	_, err = port.DefineEthernetPortConnection("")
-	if err != nil {
-		panic(err)
-	}
-
 	vm, err := systemSettings.GetVM()
 	if err != nil {
 		panic(err)

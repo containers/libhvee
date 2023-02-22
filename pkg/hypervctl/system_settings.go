@@ -120,7 +120,7 @@ func (systemSettings *SystemSettings) createSystemResourceInternal(settings inte
 	resourceStr, err := createResourceSettingGeneric(settings, resourceType)
 	if err != nil {
 		return err
-	}	
+	}
 
 	path, err := addResource(service, systemSettings.Path(), resourceStr)
 	if err != nil {

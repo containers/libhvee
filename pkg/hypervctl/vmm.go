@@ -119,4 +119,3 @@ func (*VirtualMachineManager) CreateVhdxFile(path string, maxSize uint64) error 
 
 	return waitVMResult(ret, service, job)
 }
-

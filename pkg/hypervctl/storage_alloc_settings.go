@@ -56,4 +56,3 @@ func (s *StorageAllocationSettings) setHostResource(resource []string) {
 func (s *StorageAllocationSettings) Path() string {
 	return s.S__PATH
 }
-
