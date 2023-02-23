@@ -4,8 +4,11 @@
 package hypervctl
 
 import (
+	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/containers/libhvee/pkg/hypervctl"
 )
 
 // Machine represents the information needed to be a
@@ -19,7 +22,7 @@ type Machine struct {
 	processors   uint
 	timezone     string
 	username     string
-	vm           *VirtualMachine
+	vm           *hypervctl.VirtualMachine
 	volumes      []hyperVVolume
 }
 
@@ -29,6 +32,8 @@ type hyperVVolume struct {
 	guestPath    string
 	hostPath     string
 }
+
+var ErrNotImplemented = errors.New("function not implemented")
 
 func newHyperVVolume(path string) (*hyperVVolume, error) {
 	vol := &hyperVVolume{combinedPath: path}
@@ -92,7 +97,7 @@ func (m *Machine) withVolume(vol hyperVVolume) *Machine {
 }
 
 // Create uses the builder to actually create the new virtual machine in hyperv
-func (m *Machine) Create() (*VirtualMachine, error) {
+func (m *Machine) Create() (*hypervctl.VirtualMachine, error) {
 	return nil, ErrNotImplemented
 }
 

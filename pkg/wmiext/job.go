@@ -26,6 +26,7 @@ func WaitJob(service *wmi.Service, job *wmi.Instance) error {
 		}
 		time.Sleep(100 * time.Millisecond)
 		job, _ = RefetchObject(service, job)
+                // 7+ = completed
 		if state.(int32) >= 7 {
 			break
 		}

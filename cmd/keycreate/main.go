@@ -8,10 +8,9 @@ import (
 	"time"
 
 	"github.com/containers/libhvee/pkg/wmiext"
+
 	"github.com/drtimf/wmi"
 )
-
-const something = "Select * From Msvm_ComputerSystem Where ElementName='New Virtual Machine'"
 
 func main() {
 	var service *wmi.Service
@@ -22,25 +21,28 @@ func main() {
 	}
 	defer service.Close()
 
-	item, err := wmiext.SpawnObject(service, "Msvm_KvpExchangeDataItem")
+	item, err := wmiext.SpawnInstance(service, "Msvm_KvpExchangeDataItem")
 	if err != nil {
 		panic(err)
 	}
 	defer item.Close()
 
-	item.Put("Name", "jkey-"+fmt.Sprintf("%d", time.Now().Unix()))
-	item.Put("Data", "jval-"+fmt.Sprintf("%d", time.Now().Unix()))
-	item.Put("Source", 0)
+	_ = item.Put("Name", "jkey-"+fmt.Sprintf("%d", time.Now().Unix()))
+	_ = item.Put("Data", "jval-"+fmt.Sprintf("%d", time.Now().Unix()))
+	_ = item.Put("Source", 0)
 
 	itemStr := wmiext.GetCimText(item)
 	fmt.Println(itemStr)
 
 	vmms, err := wmiext.GetSingletonInstance(service, "Msvm_VirtualSystemManagementService")
 	defer vmms.Close()
+	if err != nil {
+		panic(err)
+	}
 
 	const wql = "Select * From Msvm_ComputerSystem Where ElementName='%s'"
 
-	computerSystem, err := wmiext.FindFirstObject(service, fmt.Sprintf(wql, "New Virtual Machine"))
+	computerSystem, err := wmiext.FindFirstInstance(service, fmt.Sprintf(wql, "New Virtual Machine"))
 	if err != nil {
 		panic(err)
 	}
@@ -59,7 +61,7 @@ func main() {
 
 	e.Get("Job", &job)
 
-	e.End()
+	_ = e.End()
 	if err != nil {
 		panic(err)
 	}
