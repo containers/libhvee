@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/drtimf/wmi"
 	"github.com/containers/libhvee/pkg/wmiext"
+	"github.com/drtimf/wmi"
 )
 
 type ResourceSettings struct {
