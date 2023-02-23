@@ -6,8 +6,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/drtimf/wmi"
 	"github.com/containers/libhvee/pkg/wmiext"
+	"github.com/drtimf/wmi"
 )
 
 const (

@@ -442,7 +442,7 @@ func enumerateWithSystem(instance *wmi.Instance) (err error) {
 // uint32	VT_I4	Unsigned 32-bit integer.
 // uint64	VT_BSTR	Unsigned 64-bit integer in string form. This type follows hexadecimal or decimal format
 //                  according to ANSI C rules.
-
+//gocyclo:ignore
 func NewAutomationVariant(value interface{}) (ole.VARIANT, error) {
 	switch cast := value.(type) {
 	case bool:

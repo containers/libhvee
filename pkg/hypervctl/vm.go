@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/drtimf/wmi"
 	"github.com/containers/libhvee/pkg/wmiext"
+	"github.com/drtimf/wmi"
 )
 
 type VirtualMachine struct {

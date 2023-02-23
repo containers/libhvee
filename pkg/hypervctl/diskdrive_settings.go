@@ -1,8 +1,8 @@
 package hypervctl
 
 import (
-	"github.com/drtimf/wmi"
 	"github.com/containers/libhvee/pkg/wmiext"
+	"github.com/drtimf/wmi"
 )
 
 const SyntheticDiskDriveType = "Microsoft:Hyper-V:Synthetic Disk Drive"
