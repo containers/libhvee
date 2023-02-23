@@ -4,16 +4,11 @@
 package hypervctl
 
 import (
-	"errors"
 	"fmt"
+	"strings"
 
-	"github.com/containers/libhvee/pkg/wmiext"
 	"github.com/drtimf/wmi"
-)
-
-// temp only
-var (
-	ErrNotImplemented = errors.New("function not implemented")
+	"github.com/containers/libhvee/pkg/wmiext"
 )
 
 type VirtualMachine struct {
@@ -66,6 +61,10 @@ type VirtualMachine struct {
 	EnhancedSessionModeState                 uint16
 }
 
+func (vm *VirtualMachine) Path() string {
+	return vm.S__PATH
+}
+
 func (vm *VirtualMachine) AddKeyValuePair(key string, value string) error {
 	return vm.kvpOperation("AddKvpItems", key, value, "key already exists?")
 }
@@ -88,6 +87,44 @@ func (vm *VirtualMachine) RemoveKeyValuePair(key string) error {
 	return vm.kvpOperation("RemoveKvpItems", key, "", "key invalid?")
 }
 
+func (vm *VirtualMachine) GetKeyValuePairs() (map[string]string, error) {
+	var service *wmi.Service
+	var err error
+
+	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+		return nil, err
+	}
+
+	defer service.Close()
+
+	i, err := wmiext.FindFirstRelatedInstance(service, vm.Path(), "Msvm_KvpExchangeComponent")
+	if err != nil {
+		return nil, err
+	}
+
+	defer i.Close()
+
+	var path string
+	path, err = i.GetPropertyAsString("__PATH")
+	if err != nil {
+		return nil, err
+
+	}
+
+	i, err = wmiext.FindFirstRelatedInstance(service, path, "Msvm_KvpExchangeComponentSettingData")
+	if err != nil {
+		return nil, err
+	}
+	defer i.Close()
+
+	s, err := i.GetPropertyAsString("HostExchangeItems")
+	if err != nil {
+		return nil, err
+	}
+
+	return parseKvpMapXml(s)
+}
+
 func (vm *VirtualMachine) kvpOperation(op string, key string, value string, illegalSuggestion string) error {
 	var service *wmi.Service
 	var vsms, job *wmi.Instance
@@ -104,10 +141,10 @@ func (vm *VirtualMachine) kvpOperation(op string, key string, value string, ille
 	}
 	defer vsms.Close()
 
-	itemStr := createItem(service, key, value)
+	itemStr := createKvpItem(service, key, value)
 
 	execution := wmiext.BeginInvoke(service, vsms, op).
-		Set("TargetSystem", vm.S__PATH).
+		Set("TargetSystem", vm.Path()).
 		Set("DataItems", []string{itemStr}).
 		Execute()
 
@@ -115,27 +152,24 @@ func (vm *VirtualMachine) kvpOperation(op string, key string, value string, ille
 		return fmt.Errorf("%s execution failed: %w", op, err)
 	}
 
-	err = translateError(wmiext.WaitJob(service, job), illegalSuggestion)
+	err = translateKvpError(wmiext.WaitJob(service, job), illegalSuggestion)
 	defer job.Close()
 	return err
 }
 
-func (vm *VirtualMachine) Stop() error {
-	return ErrNotImplemented
-}
+func waitVMResult(res int32, service *wmi.Service, job *wmi.Instance) error {
+	var err error
 
-func (vm *VirtualMachine) Start() error {
-	return ErrNotImplemented
-}
+	if res == 4096 {
+		err = wmiext.WaitJob(service, job)
+		defer job.Close()
+	}
 
-func (vm *VirtualMachine) Delete() error {
-	return ErrNotImplemented
-}
+	if err != nil {
+		desc, _ := job.GetPropertyAsString("ErrorDescription")
+		desc = strings.Replace(desc, "\n", " ", -1)
+		return fmt.Errorf("Failed to define system: %w (%s)", err, desc)
+	}
 
-func (vm *VirtualMachine) Inspect() error {
-	return ErrNotImplemented
-}
-
-func (vm *VirtualMachine) Set() error {
-	return ErrNotImplemented
+	return err
 }
