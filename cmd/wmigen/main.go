@@ -1,5 +1,7 @@
 package main
 
+// TODO still need to implement removal of any configuration files
+
 import (
 	"bufio"
 	"fmt"
