@@ -16,7 +16,7 @@ type VirtualMachineManager struct {
 }
 
 func (*VirtualMachineManager) GetAll() ([]*VirtualMachine, error) {
-	const wql = "Select * From Msvm_ComputerSystem"
+	const wql = "Select * From Msvm_ComputerSystem Where Caption = 'Virtual Machine'"
 
 	var service *wmi.Service
 	var err error
@@ -48,7 +48,7 @@ func (*VirtualMachineManager) GetAll() ([]*VirtualMachine, error) {
 }
 
 func (*VirtualMachineManager) GetMachine(name string) (*VirtualMachine, error) {
-	const wql = "Select * From Msvm_ComputerSystem Where ElementName='%s'"
+	const wql = "Select * From Msvm_ComputerSystem Where Caption = 'Virtual Machine' And ElementName='%s'"
 
 	vm := &VirtualMachine{}
 	var service *wmi.Service
