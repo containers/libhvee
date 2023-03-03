@@ -3,6 +3,7 @@ module github.com/containers/libhvee
 go 1.18
 
 require (
+	github.com/davecgh/go-spew v1.1.1
 	github.com/drtimf/wmi v1.0.0
 	github.com/go-ole/go-ole v1.2.6
 	github.com/sirupsen/logrus v1.9.0

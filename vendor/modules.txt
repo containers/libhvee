@@ -1,3 +1,6 @@
+# github.com/davecgh/go-spew v1.1.1
+## explicit
+github.com/davecgh/go-spew/spew
 # github.com/drtimf/wmi v1.0.0
 ## explicit; go 1.15
 github.com/drtimf/wmi

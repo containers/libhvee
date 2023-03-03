@@ -12,7 +12,13 @@ const (
 	VirtualSystemManagementService = "Msvm_VirtualSystemManagementService"
 )
 
+// https://learn.microsoft.com/en-us/windows/win32/hyperv_v2/msvm-computersystem
+
 type VirtualMachineManager struct {
+}
+
+func NewVirtualMachineManager() *VirtualMachineManager {
+	return &VirtualMachineManager{}
 }
 
 func (*VirtualMachineManager) GetAll() ([]*VirtualMachine, error) {
@@ -31,7 +37,7 @@ func (*VirtualMachineManager) GetAll() ([]*VirtualMachine, error) {
 	}
 	defer enum.Close()
 
-	var vms [](*VirtualMachine)
+	var vms []*VirtualMachine
 	for {
 		vm := &VirtualMachine{}
 		done, err := wmiext.NextObjectWithPath(enum, vm)
@@ -45,6 +51,19 @@ func (*VirtualMachineManager) GetAll() ([]*VirtualMachine, error) {
 	}
 
 	return vms, nil
+}
+func (vmm *VirtualMachineManager) Exists(name string) (bool, error) {
+	vms, err := vmm.GetAll()
+	if err != nil {
+		return false, err
+	}
+	for _, i := range vms {
+		// TODO should case be honored or ignored?
+		if i.Name == name {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (*VirtualMachineManager) GetMachine(name string) (*VirtualMachine, error) {
