@@ -1,3 +1,6 @@
+//go:build windows
+// +build windows
+
 package main
 
 import (
@@ -24,7 +27,7 @@ func main() {
 	vmm := hypervctl.VirtualMachineManager{}
 
 	if fileExists(isoFile) {
-		panic(fmt.Errorf("Iso file %q does not exist", isoFile))
+		panic(fmt.Errorf("iso file %q does not exist", isoFile))
 	}
 
 	if fileExists(vhdxFile) {
@@ -108,7 +111,7 @@ func fileExists(file string) bool {
 func abs(file string) string {
 	path, err := filepath.Abs(file)
 	if err != nil {
-		panic(fmt.Errorf("Error building path for %s: %w", path, err))
+		panic(fmt.Errorf("error building path for %s: %w", path, err))
 	}
 
 	return path

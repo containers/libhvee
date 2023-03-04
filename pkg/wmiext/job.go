@@ -6,8 +6,6 @@ package wmiext
 import (
 	"fmt"
 	"time"
-
-	"github.com/drtimf/wmi"
 )
 
 type JobError struct {
@@ -18,21 +16,31 @@ func (err *JobError) Error() string {
 	return fmt.Sprintf("Job failed with error code: %d", err.ErrorCode)
 }
 
-func WaitJob(service *wmi.Service, job *wmi.Instance) error {
+// WaitJob waits on the specified job instance until it has completed and
+// returns a JobError containing the result code in the event of
+// a failure.
+func WaitJob(service *Service, job *Instance) error {
+	var jobs []*Instance
+	defer func() {
+		for _, job := range jobs {
+			job.Close()
+		}
+	}()
 	for {
-		state, _, _, err := job.Get("JobState")
+		state, _, _, err := job.GetAsAny("JobState")
 		if err != nil {
 			return err
 		}
 		time.Sleep(100 * time.Millisecond)
-		job, _ = RefetchObject(service, job)
+		job, _ = service.RefetchObject(job)
+		jobs = append(jobs, job)
 		// 7+ = completed
 		if state.(int32) >= 7 {
 			break
 		}
 	}
 
-	result, _, _, err := job.Get("ErrorCode")
+	result, _, _, err := job.GetAsAny("ErrorCode")
 	if err != nil {
 		return err
 	}

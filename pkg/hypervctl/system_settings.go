@@ -1,3 +1,6 @@
+//go:build windows
+// +build windows
+
 package hypervctl
 
 import (
@@ -5,7 +8,6 @@ import (
 	"time"
 
 	"github.com/containers/libhvee/pkg/wmiext"
-	"github.com/drtimf/wmi"
 )
 
 type SystemSettings struct {
@@ -102,9 +104,9 @@ func (s *SystemSettings) AddScsiController() (*ScsiControllerSettings, error) {
 }
 
 func (s *SystemSettings) createSystemResourceInternal(settings interface{}, resourceType string, cb func()) error {
-	var service *wmi.Service
+	var service *wmiext.Service
 	var err error
-	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
 		return err
 	}
 	defer service.Close()
@@ -127,7 +129,7 @@ func (s *SystemSettings) createSystemResourceInternal(settings interface{}, reso
 		return err
 	}
 
-	err = wmiext.GetObjectAsObject(service, path, settings)
+	err = service.GetObjectAsObject(path, settings)
 	return err
 }
 
@@ -150,8 +152,8 @@ func (s *SystemSettings) AddSyntheticEthernetPort(beforeAdd func(*SyntheticEther
 	return port, nil
 }
 
-func addResource(service *wmi.Service, systemSettingPath string, resourceSettings string) (string, error) {
-	vsms, err := wmiext.GetSingletonInstance(service, VirtualSystemManagementService)
+func addResource(service *wmiext.Service, systemSettingPath string, resourceSettings string) (string, error) {
+	vsms, err := service.GetSingletonInstance(VirtualSystemManagementService)
 	if err != nil {
 		return "", err
 	}
@@ -159,14 +161,14 @@ func addResource(service *wmi.Service, systemSettingPath string, resourceSetting
 
 	var res int32
 	var resultingSettings []string
-	var job *wmi.Instance
-	err = wmiext.BeginInvoke(service, vsms, "AddResourceSettings").
-		Set("AffectedConfiguration", systemSettingPath).
-		Set("ResourceSettings", []string{resourceSettings}).
+	var job *wmiext.Instance
+	err = vsms.BeginInvoke("AddResourceSettings").
+		In("AffectedConfiguration", systemSettingPath).
+		In("ResourceSettings", []string{resourceSettings}).
 		Execute().
-		Get("Job", &job).
-		Get("ResultingResourceSettings", &resultingSettings).
-		Get("ReturnValue", &res).End()
+		Out("Job", &job).
+		Out("ResultingResourceSettings", &resultingSettings).
+		Out("ReturnValue", &res).End()
 
 	if err != nil {
 		return "", fmt.Errorf("AddResourceSettings failed: %w", err)
@@ -182,14 +184,14 @@ func addResource(service *wmi.Service, systemSettingPath string, resourceSetting
 }
 
 func (s *SystemSettings) GetVM() (*VirtualMachine, error) {
-	var service *wmi.Service
+	var service *wmiext.Service
 	var err error
-	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
 		return nil, err
 	}
 	defer service.Close()
 
-	inst, err := wmiext.FindFirstRelatedInstance(service, s.Path(), "Msvm_ComputerSystem")
+	inst, err := service.FindFirstRelatedInstance(s.Path(), "Msvm_ComputerSystem")
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +199,7 @@ func (s *SystemSettings) GetVM() (*VirtualMachine, error) {
 
 	vm := &VirtualMachine{}
 
-	if err = wmiext.InstanceGetAll(inst, vm); err != nil {
+	if err = inst.GetAll(vm); err != nil {
 		return nil, err
 	}
 

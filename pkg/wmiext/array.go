@@ -48,7 +48,7 @@ func safeArrayCreateVector(variantType ole.VT, lowerBound int32, length uint32) 
 func safeArrayFromNumericSlice(slice interface{}, itemType ole.VT) (*ole.SafeArray, error) {
 	sliceType := reflect.TypeOf(slice)
 	if sliceType.Kind() != reflect.Slice {
-		return nil, errors.New("Expected a slice converting to safe array")
+		return nil, errors.New("expected a slice converting to safe array")
 	}
 
 	val := reflect.ValueOf(slice)
@@ -131,6 +131,57 @@ func safeArrayPutElement(safearray *ole.SafeArray, index int64, element uintptr)
 	}
 
 	return nil
+}
+
+func safeArrayGetElement(safearray *ole.SafeArray, index int64, element unsafe.Pointer) error {
+
+	ret, _, _ := procSafeArrayGetElement.Call(
+		uintptr(unsafe.Pointer(safearray)),
+		uintptr(unsafe.Pointer(&index)),
+		uintptr(element))
+
+	if ret != 0 {
+		return ole.NewError(ret)
+	}
+
+	return nil
+}
+
+func isVariantValConvertible(variant ole.VARIANT) bool {
+	return !(variant.VT == ole.VT_RECORD || variant.VT == ole.VT_VARIANT)
+}
+
+func safeArrayGetAsVariantVal(safeArray *ole.SafeArray, index int64, variant ole.VARIANT) (int64, error) {
+	var block int64
+
+	if !isVariantValConvertible(variant) {
+		return 0, fmt.Errorf("numeric call on a non-numeric value: %d", variant.VT)
+	}
+
+	if err := safeArrayGetElement(safeArray, index, unsafe.Pointer(&block)); err != nil {
+		return 0, err
+	}
+
+	switch variant.VT {
+	case ole.VT_UI1:
+		return int64(uint64(*(*uint8)(unsafe.Pointer(&block)))), nil
+	case ole.VT_UI2:
+		return int64(uint64(*(*uint16)(unsafe.Pointer(&block)))), nil
+	case ole.VT_UI4:
+		return int64(uint64(*(*uint32)(unsafe.Pointer(&block)))), nil
+	case ole.VT_I1:
+		return int64(*(*int8)(unsafe.Pointer(&block))), nil
+	case ole.VT_I2:
+		return int64(*(*int16)(unsafe.Pointer(&block))), nil
+	case ole.VT_I4:
+		return int64(*(*int32)(unsafe.Pointer(&block))), nil
+	case ole.VT_UI8, ole.VT_I8:
+		fallthrough
+	case ole.VT_R4, ole.VT_R8:
+		fallthrough
+	default:
+		return block, nil
+	}
 }
 
 func safeArrayFromStringSlice(slice []string) (*ole.SafeArray, error) {

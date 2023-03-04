@@ -13,7 +13,6 @@ import (
 
 	"github.com/containers/libhvee/pkg/kvp/ginsu"
 	"github.com/containers/libhvee/pkg/wmiext"
-	"github.com/drtimf/wmi"
 )
 
 // delete this when close to being done
@@ -28,7 +27,7 @@ type VirtualMachine struct {
 	Caption                                  string
 	Description                              string
 	ElementName                              string
-	InstallDate                              string
+	InstallDate                              time.Time
 	OperationalStatus                        []uint16
 	StatusDescriptions                       []string
 	Status                                   string
@@ -66,7 +65,7 @@ type VirtualMachine struct {
 	FailedOverReplicationType                uint16
 	LastReplicationType                      uint16
 	LastApplicationConsistentReplicationTime string
-	LastReplicationTime                      string
+	LastReplicationTime                      time.Time
 	LastSuccessfulBackupTime                 string
 	EnhancedSessionModeState                 uint16
 }
@@ -111,16 +110,16 @@ func (vm *VirtualMachine) RemoveKeyValuePair(key string) error {
 }
 
 func (vm *VirtualMachine) GetKeyValuePairs() (map[string]string, error) {
-	var service *wmi.Service
+	var service *wmiext.Service
 	var err error
 
-	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
 		return nil, err
 	}
 
 	defer service.Close()
 
-	i, err := wmiext.FindFirstRelatedInstance(service, vm.Path(), "Msvm_KvpExchangeComponent")
+	i, err := service.FindFirstRelatedInstance(vm.Path(), "Msvm_KvpExchangeComponent")
 	if err != nil {
 		return nil, err
 	}
@@ -128,19 +127,19 @@ func (vm *VirtualMachine) GetKeyValuePairs() (map[string]string, error) {
 	defer i.Close()
 
 	var path string
-	path, err = i.GetPropertyAsString("__PATH")
+	path, err = i.GetAsString("__PATH")
 	if err != nil {
 		return nil, err
 
 	}
 
-	i, err = wmiext.FindFirstRelatedInstance(service, path, "Msvm_KvpExchangeComponentSettingData")
+	i, err = service.FindFirstRelatedInstance(path, "Msvm_KvpExchangeComponentSettingData")
 	if err != nil {
 		return nil, err
 	}
 	defer i.Close()
 
-	s, err := i.GetPropertyAsString("HostExchangeItems")
+	s, err := i.GetAsString("HostExchangeItems")
 	if err != nil {
 		return nil, err
 	}
@@ -149,16 +148,16 @@ func (vm *VirtualMachine) GetKeyValuePairs() (map[string]string, error) {
 }
 
 func (vm *VirtualMachine) kvpOperation(op string, key string, value string, illegalSuggestion string) error {
-	var service *wmi.Service
-	var vsms, job *wmi.Instance
+	var service *wmiext.Service
+	var vsms, job *wmiext.Instance
 	var err error
 
-	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
-		return (err)
+	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
+		return err
 	}
 	defer service.Close()
 
-	vsms, err = wmiext.GetSingletonInstance(service, VirtualSystemManagementService)
+	vsms, err = service.GetSingletonInstance(VirtualSystemManagementService)
 	if err != nil {
 		return err
 	}
@@ -166,12 +165,12 @@ func (vm *VirtualMachine) kvpOperation(op string, key string, value string, ille
 
 	itemStr := createKvpItem(service, key, value)
 
-	execution := wmiext.BeginInvoke(service, vsms, op).
-		Set("TargetSystem", vm.Path()).
-		Set("DataItems", []string{itemStr}).
+	execution := vsms.BeginInvoke(op).
+		In("TargetSystem", vm.Path()).
+		In("DataItems", []string{itemStr}).
 		Execute()
 
-	if err := execution.Get("Job", &job).End(); err != nil {
+	if err := execution.Out("Job", &job).End(); err != nil {
 		return fmt.Errorf("%s execution failed: %w", op, err)
 	}
 
@@ -180,7 +179,7 @@ func (vm *VirtualMachine) kvpOperation(op string, key string, value string, ille
 	return err
 }
 
-func waitVMResult(res int32, service *wmi.Service, job *wmi.Instance) error {
+func waitVMResult(res int32, service *wmiext.Service, job *wmiext.Instance) error {
 	var err error
 
 	if res == 4096 {
@@ -189,7 +188,7 @@ func waitVMResult(res int32, service *wmi.Service, job *wmi.Instance) error {
 	}
 
 	if err != nil {
-		desc, _ := job.GetPropertyAsString("ErrorDescription")
+		desc, _ := job.GetAsString("ErrorDescription")
 		desc = strings.Replace(desc, "\n", " ", -1)
 		return fmt.Errorf("failed to define system: %w (%s)", err, desc)
 	}
@@ -203,24 +202,24 @@ func (vm *VirtualMachine) Stop() error {
 	}
 	var (
 		err error
-		job *wmi.Instance
+		job *wmiext.Instance
 		res int32
-		srv *wmi.Service
+		srv *wmiext.Service
 	)
-	if srv, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+	if srv, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
 		return err
 	}
-	wmiInst, err := wmiext.FindFirstRelatedInstance(srv, vm.Path(), "Msvm_ShutdownComponent")
+	wmiInst, err := srv.FindFirstRelatedInstance(vm.Path(), "Msvm_ShutdownComponent")
 	if err != nil {
 		return err
 	}
 	// https://learn.microsoft.com/en-us/windows/win32/hyperv_v2/msvm-shutdowncomponent-initiateshutdown
-	err = wmiext.BeginInvoke(srv, wmiInst, "InitiateShutdown").
-		Set("Reason", "User requested").
-		Set("Force", false).
+	err = wmiInst.BeginInvoke("InitiateShutdown").
+		In("Reason", "User requested").
+		In("Force", false).
 		Execute().
-		Get("Job", &job).
-		Get("ReturnValue", &res).End()
+		Out("Job", &job).
+		Out("ReturnValue", &res).End()
 	if err != nil {
 		return err
 	}
@@ -229,9 +228,9 @@ func (vm *VirtualMachine) Stop() error {
 
 func (vm *VirtualMachine) Start() error {
 	var (
-		srv *wmi.Service
+		srv *wmiext.Service
 		err error
-		job *wmi.Instance
+		job *wmiext.Instance
 		res int32
 	)
 
@@ -256,20 +255,20 @@ func (vm *VirtualMachine) Start() error {
 	defer instance.Close()
 
 	// https://learn.microsoft.com/en-us/windows/win32/hyperv_v2/cim-concretejob-requeststatechange
-	if err := wmiext.BeginInvoke(srv, instance, "RequestStateChange").
-		Set("RequestedState", uint16(start)).
-		Set("TimeoutPeriod", &time.Time{}).
+	if err := instance.BeginInvoke("RequestStateChange").
+		In("RequestedState", uint16(start)).
+		In("TimeoutPeriod", &time.Time{}).
 		Execute().
-		Get("Job", &job).
-		Get("ReturnValue", &res).End(); err != nil {
+		Out("Job", &job).
+		Out("ReturnValue", &res).End(); err != nil {
 		return err
 	}
 	return waitVMResult(res, srv, job)
 }
 
-func getService(_ *wmi.Service) (*wmi.Service, error) {
+func getService(_ *wmiext.Service) (*wmiext.Service, error) {
 	// any reason why when we instantiate a vm, we should NOT just embed a service?
-	return wmi.NewLocalService(HyperVNamespace)
+	return wmiext.NewLocalService(HyperVNamespace)
 }
 
 func (vm *VirtualMachine) list() ([]*HyperVConfig, error) {
@@ -282,39 +281,38 @@ func (vm *VirtualMachine) GetConfig() (*HyperVConfig, error) {
 		err error
 		//job *wmi.Instance
 		res int32
-		srv *wmi.Service
+		srv *wmiext.Service
 	)
 
 	//summary := SummaryInformation{}
 
-	if srv, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+	if srv, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
 		return nil, err
 	}
-	wmiInst, err := wmiext.FindFirstRelatedInstance(srv, vm.Path(), "Msvm_VirtualSystemSettingData")
+	wmiInst, err := srv.FindFirstRelatedInstance(vm.Path(), "Msvm_VirtualSystemSettingData")
 	if err != nil {
 		return nil, err
 	}
 	defer wmiInst.Close()
 
-	path, err := wmiext.ConvertToPath(wmiInst)
+	path, err := wmiInst.Path()
 	if err != nil {
 		return nil, err
 	}
 
-	imms, err := wmiext.GetSingletonInstance(srv, "Msvm_VirtualSystemManagementService")
+	imms, err := srv.GetSingletonInstance("Msvm_VirtualSystemManagementService")
 	if err != nil {
 		return nil, err
 	}
 	defer imms.Close()
 	var foo []string
-	err = wmiext.BeginInvoke(srv, imms, "GetSummaryInformation").
-		Set("RequestedInformation", []uint32{103}).
-		Set("SettingData", []string{path}).
+	err = imms.BeginInvoke("GetSummaryInformation").
+		In("RequestedInformation", []uint32{103}).
+		In("SettingData", []string{path}).
 		Execute().
-		Get("ReturnValue", &res).
-		Get("SummaryInformation", &foo).End()
+		Out("ReturnValue", &res).
+		Out("SummaryInformation", &foo).End()
 	if err != nil {
-		fmt.Println(res)
 		return nil, err
 	}
 	//names, err := wmiInst.
@@ -410,45 +408,45 @@ func (vm *VirtualMachine) remove() (int32, error) {
 	var (
 		err error
 		res int32
-		srv *wmi.Service
+		srv *wmiext.Service
 	)
 
 	// Check for disabled/stopped state
 	if !Disabled.equal(vm.EnabledState) {
 		return -1, ErrMachineStateInvalid
 	}
-	if srv, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+	if srv, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
 		return -1, err
 	}
 
-	wmiInst, err := wmiext.FindFirstRelatedInstance(srv, vm.Path(), "Msvm_VirtualSystemSettingData")
+	wmiInst, err := srv.FindFirstRelatedInstance(vm.Path(), "Msvm_VirtualSystemSettingData")
 	if err != nil {
 		return -1, err
 	}
 	defer wmiInst.Close()
 
-	path, err := wmiext.ConvertToPath(wmiInst)
+	path, err := wmiInst.Path()
 	if err != nil {
 		return -1, err
 	}
 
-	vsms, err := wmiext.GetSingletonInstance(srv, "Msvm_VirtualSystemManagementService")
+	vsms, err := srv.GetSingletonInstance("Msvm_VirtualSystemManagementService")
 	if err != nil {
 		return -1, err
 	}
 	defer wmiInst.Close()
 
 	var (
-		job             *wmi.Instance
+		job             *wmiext.Instance
 		resultingSystem string
 	)
 	// https://learn.microsoft.com/en-us/windows/win32/hyperv_v2/cim-virtualsystemmanagementservice-destroysystem
-	if err := wmiext.BeginInvoke(srv, vsms, "DestroySystem").
-		Set("AffectedSystem", path).
+	if err := vsms.BeginInvoke("DestroySystem").
+		In("AffectedSystem", path).
 		Execute().
-		Get("Job", &job).
-		Get("ResultingSystem", &resultingSystem).
-		Get("ReturnValue", &res).End(); err != nil {
+		Out("Job", &job).
+		Out("ResultingSystem", &resultingSystem).
+		Out("ReturnValue", &res).End(); err != nil {
 		return -1, err
 	}
 

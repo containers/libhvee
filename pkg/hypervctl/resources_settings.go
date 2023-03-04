@@ -1,3 +1,6 @@
+//go:build windows
+// +build windows
+
 package hypervctl
 
 import (
@@ -5,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/containers/libhvee/pkg/wmiext"
-	"github.com/drtimf/wmi"
 )
 
 type ResourceSettings struct {
@@ -49,9 +51,9 @@ func (s *ResourceSettings) Path() string {
 }
 
 func createResourceSettingGeneric(settings interface{}, resourceType string) (string, error) {
-	var service *wmi.Service
+	var service *wmiext.Service
 	var err error
-	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
 		return "", err
 	}
 
@@ -66,23 +68,23 @@ func createResourceSettingGeneric(settings interface{}, resourceType string) (st
 	}
 
 	defer resource.Close()
-	resource, err = wmiext.CloneInstance(resource)
+	resource, err = resource.CloneInstance()
 	if err != nil {
 		return "", err
 	}
 	defer resource.Close()
 
-	if err = wmiext.InstancePutAll(resource, settings); err != nil {
+	if err = resource.PutAll(settings); err != nil {
 		return "", err
 	}
 
-	return wmiext.GetCimText(resource), nil
+	return resource.GetCimText(), nil
 }
 
 func populateDefaults(subType string, settings interface{}) error {
-	var service *wmi.Service
+	var service *wmiext.Service
 	var err error
-	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
 		return err
 	}
 	defer service.Close()
@@ -92,18 +94,18 @@ func populateDefaults(subType string, settings interface{}) error {
 		return err
 	}
 
-	return wmiext.GetObjectAsObject(service, ref, settings)
+	return service.GetObjectAsObject(ref, settings)
 }
 
-func findResourceDefaults(service *wmi.Service, subType string) (string, error) {
+func findResourceDefaults(service *wmiext.Service, subType string) (string, error) {
 	wql := fmt.Sprintf("SELECT * FROM Msvm_AllocationCapabilities WHERE ResourceSubType = '%s'", subType)
-	instance, err := wmiext.FindFirstInstance(service, wql)
+	instance, err := service.FindFirstInstance(wql)
 	if err != nil {
 		return "", err
 	}
 	defer instance.Close()
 
-	path, err := wmiext.ConvertToPath(instance)
+	path, err := instance.Path()
 	if err != nil {
 		return "", err
 	}
@@ -120,11 +122,11 @@ func findResourceDefaults(service *wmi.Service, subType string) (string, error) 
 			return "", err
 		}
 		if entry == nil {
-			return "", errors.New("Could not find settings definition for resource")
+			return "", errors.New("could not find settings definition for resource")
 		}
 
-		value, vErr := wmiext.GetPropertyAsUint(entry, "ValueRole")
-		ref, pErr := entry.GetPropertyAsString("PartComponent")
+		value, vErr := entry.GetAsUint("ValueRole")
+		ref, pErr := entry.GetAsString("PartComponent")
 		entry.Close()
 		if vErr == nil && pErr == nil && value == 0 {
 			return ref, nil

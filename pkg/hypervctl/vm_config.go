@@ -1,3 +1,6 @@
+//go:build windows
+// +build windows
+
 package hypervctl
 
 import (
@@ -111,50 +114,50 @@ type Statuses struct {
 }
 
 // SummaryInformation https://learn.microsoft.com/en-us/windows/win32/hyperv_v2/msvm-summaryinformation
-type SummaryInformation struct {
-	InstanceID                      string
-	AllocatedGPU                    string
-	Shielded                        bool
-	AsynchronousTasks               []CIM_ConcreteJob
-	CreationTime                    time.Time
-	ElementName                     string
-	EnabledState                    uint16
-	OtherEnabledState               string
-	GuestOperatingSystem            string
-	HealthState                     uint16
-	Heartbeat                       uint16
-	MemoryUsage                     uint64
-	MemoryAvailable                 int32 // changed from sint32
-	AvailableMemoryBuffer           int32 // changed from sint32
-	SwapFilesInUse                  bool
-	Name                            string
-	Notes                           string
-	Version                         string
-	NumberOfProcessors              uint16
-	OperationalStatus               []uint16
-	ProcessorLoad                   uint16
-	ProcessorLoadHistory            []uint16
-	Snapshots                       []SystemSettings
-	StatusDescriptions              []string
-	ThumbnailImage                  []uint8
-	ThumbnailImageHeight            uint16
-	ThumbnailImageWidth             uint16
-	UpTime                          uint64
-	ReplicationState                uint16
-	ReplicationStateEx              []uint16
-	ReplicationHealth               uint16
-	ReplicationHealthEx             []uint16
-	ReplicationMode                 uint16
-	TestReplicaSystem               string // REF to CIM_ComputerSystem
-	ApplicationHealth               uint16
-	IntegrationServicesVersionState uint16
-	MemorySpansPhysicalNumaNodes    bool
-	ReplicationProviderId           []string
-	EnhancedSessionModeState        uint16
-	VirtualSwitchNames              []string
-	VirtualSystemSubType            string
-	HostComputerSystemName          string
-}
+// type SummaryInformation struct {
+// 	InstanceID                      string
+// 	AllocatedGPU                    string
+// 	Shielded                        bool
+// 	AsynchronousTasks               []CIM_ConcreteJob
+// 	CreationTime                    time.Time
+// 	ElementName                     string
+// 	EnabledState                    uint16
+// 	OtherEnabledState               string
+// 	GuestOperatingSystem            string
+// 	HealthState                     uint16
+// 	Heartbeat                       uint16
+// 	MemoryUsage                     uint64
+// 	MemoryAvailable                 int32 // changed from sint32
+// 	AvailableMemoryBuffer           int32 // changed from sint32
+// 	SwapFilesInUse                  bool
+// 	Name                            string
+// 	Notes                           string
+// 	Version                         string
+// 	NumberOfProcessors              uint16
+// 	OperationalStatus               []uint16
+// 	ProcessorLoad                   uint16
+// 	ProcessorLoadHistory            []uint16
+// 	Snapshots                       []SystemSettings
+// 	StatusDescriptions              []string
+// 	ThumbnailImage                  []uint8
+// 	ThumbnailImageHeight            uint16
+// 	ThumbnailImageWidth             uint16
+// 	UpTime                          uint64
+// 	ReplicationState                uint16
+// 	ReplicationStateEx              []uint16
+// 	ReplicationHealth               uint16
+// 	ReplicationHealthEx             []uint16
+// 	ReplicationMode                 uint16
+// 	TestReplicaSystem               string // REF to CIM_ComputerSystem
+// 	ApplicationHealth               uint16
+// 	IntegrationServicesVersionState uint16
+// 	MemorySpansPhysicalNumaNodes    bool
+// 	ReplicationProviderId           []string
+// 	EnhancedSessionModeState        uint16
+// 	VirtualSwitchNames              []string
+// 	VirtualSystemSubType            string
+// 	HostComputerSystemName          string
+// }
 
 // CIM_ConcreteJob https://learn.microsoft.com/en-us/windows/win32/hyperv_v2/msvm-concretejob
 type CIM_ConcreteJob struct {

@@ -1,3 +1,6 @@
+//go:build windows
+// +build windows
+
 package hypervctl
 
 const ProcessorResourceType = "Microsoft:Hyper-V:Processor"
