@@ -4,12 +4,14 @@
 package hypervctl
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/containers/libhvee/pkg/kvp/ginsu"
 	"github.com/containers/libhvee/pkg/wmiext"
 	"github.com/drtimf/wmi"
 )
@@ -71,6 +73,19 @@ type VirtualMachine struct {
 
 func (vm *VirtualMachine) Path() string {
 	return vm.S__PATH
+}
+func (vm *VirtualMachine) SplitAndAddIgnition(keyPrefix string, ignRdr *bytes.Reader) error {
+	parts, err := ginsu.Dice(ignRdr)
+	if err != nil {
+		return err
+	}
+	for idx, val := range parts {
+		key := fmt.Sprintf("%s%d", keyPrefix, idx)
+		if err := vm.AddKeyValuePair(key, val); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (vm *VirtualMachine) AddKeyValuePair(key string, value string) error {
@@ -252,7 +267,7 @@ func (vm *VirtualMachine) Start() error {
 	return waitVMResult(res, srv, job)
 }
 
-func getService(w *wmi.Service) (*wmi.Service, error) {
+func getService(_ *wmi.Service) (*wmi.Service, error) {
 	// any reason why when we instantiate a vm, we should NOT just embed a service?
 	return wmi.NewLocalService(HyperVNamespace)
 }
@@ -399,7 +414,7 @@ func (vm *VirtualMachine) remove() (int32, error) {
 	)
 
 	// Check for disabled/stopped state
-	if Disabled.equal(vm.EnabledState) {
+	if !Disabled.equal(vm.EnabledState) {
 		return -1, ErrMachineStateInvalid
 	}
 	if srv, err = wmi.NewLocalService(HyperVNamespace); err != nil {
@@ -445,17 +460,17 @@ func (vm *VirtualMachine) remove() (int32, error) {
 }
 
 func (vm *VirtualMachine) Remove(diskPath string) error {
-	// Remove disk only if we were given one
-	if len(diskPath) > 0 {
-		if err := os.Remove(diskPath); err != nil {
-			return err
-		}
-	}
 	res, err := vm.remove()
 	if err != nil {
 		return err
 	}
 	if DestroySystemResult(res) == VMDestroyCompletedwithNoError {
+		// Remove disk only if we were given one
+		if len(diskPath) > 0 {
+			if err := os.Remove(diskPath); err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 	return fmt.Errorf("failed to destroy system %s: %s", vm.Name, DestroySystemResult(res).Reason())
