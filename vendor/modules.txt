@@ -1,6 +1,5 @@
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
-github.com/davecgh/go-spew/spew
 # github.com/drtimf/wmi v1.0.0
 ## explicit; go 1.15
 github.com/drtimf/wmi
@@ -14,7 +13,7 @@ github.com/go-ole/go-ole
 github.com/sirupsen/logrus
 # github.com/stretchr/testify v1.8.1
 ## explicit; go 1.13
-# golang.org/x/sys v0.5.0
+# golang.org/x/sys v0.6.0
 ## explicit; go 1.17
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
