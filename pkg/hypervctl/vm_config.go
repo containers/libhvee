@@ -134,7 +134,7 @@ type SummaryInformation struct {
 	OperationalStatus               []uint16
 	ProcessorLoad                   uint16
 	ProcessorLoadHistory            []uint16
-	Snapshots                       []CIM_VirtualSystemSettingData
+	Snapshots                       []SystemSettings
 	StatusDescriptions              []string
 	ThumbnailImage                  []uint8
 	ThumbnailImageHeight            uint16
@@ -154,70 +154,6 @@ type SummaryInformation struct {
 	VirtualSwitchNames              []string
 	VirtualSystemSubType            string
 	HostComputerSystemName          string
-}
-
-// CIM_VirtualSystemSettingData https://learn.microsoft.com/en-us/windows/win32/hyperv_v2/msvm-virtualsystemsettingdata
-type CIM_VirtualSystemSettingData struct {
-	InstanceID                           string
-	Caption                              string // = "Virtual Machine Settings"
-	Description                          string
-	ElementName                          string
-	VirtualSystemIdentifier              string
-	VirtualSystemType                    string
-	Notes                                []string
-	CreationTime                         time.Time
-	ConfigurationID                      string
-	ConfigurationDataRoot                string
-	ConfigurationFile                    string
-	SnapshotDataRoot                     string
-	SuspendDataRoot                      string
-	SwapFileDataRoot                     string
-	LogDataRoot                          string
-	AutomaticStartupAction               uint16
-	AutomaticStartupActionDelay          time.Time
-	AutomaticStartupActionSequenceNumber uint16
-	AutomaticShutdownAction              uint16
-	AutomaticRecoveryAction              uint16
-	RecoveryFile                         string
-	BIOSGUID                             string
-	BIOSSerialNumber                     string
-	BaseBoardSerialNumber                string
-	ChassisSerialNumber                  string
-	Architecture                         string
-	ChassisAssetTag                      string
-	BIOSNumLock                          bool
-	BootOrder                            []uint16
-	Parent                               string
-	UserSnapshotType                     uint16
-	IsSaved                              bool
-	AdditionalRecoveryInformation        string
-	AllowFullSCSICommandSet              bool
-	DebugChannelId                       uint32
-	DebugPortEnabled                     uint16
-	DebugPort                            uint32
-	Version                              string
-	IncrementalBackupEnabled             bool
-	VirtualNumaEnabled                   bool
-	AllowReducedFcRedundancy             bool // = False
-	VirtualSystemSubType                 string
-	BootSourceOrder                      []string
-	PauseAfterBootFailure                bool
-	NetworkBootPreferredProtocol         uint16
-	GuestControlledCacheTypes            bool
-	AutomaticSnapshotsEnabled            bool
-	IsAutomaticSnapshot                  bool
-	GuestStateFile                       string
-	GuestStateDataRoot                   string
-	LockOnDisconnect                     bool
-	ParentPackage                        string
-	AutomaticCriticalErrorActionTimeout  time.Time
-	AutomaticCriticalErrorAction         uint16
-	ConsoleMode                          uint16
-	SecureBootEnabled                    bool
-	SecureBootTemplateId                 string
-	LowMmioGapSize                       uint64
-	HighMmioGapSize                      uint64
-	EnhancedSessionTransportType         uint16
 }
 
 // CIM_ConcreteJob https://learn.microsoft.com/en-us/windows/win32/hyperv_v2/msvm-concretejob
