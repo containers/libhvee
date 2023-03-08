@@ -115,7 +115,9 @@ func newInstance(object *ole.IUnknown, service *Service) *Instance {
 
 // Close cleans up all memory associated with this instance.
 func (i *Instance) Close() {
-	i.object.Release()
+	if i != nil && i.object != nil {
+		i.object.Release()
+	}
 }
 
 // GetClassName Gets the WMI class name for this WMI object instance

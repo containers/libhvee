@@ -29,7 +29,9 @@ type Enum struct {
 }
 
 func (e *Enum) Close() {
-	e.enum.Release()
+	if e != nil && e.enum != nil {
+		e.enum.Release()
+	}
 }
 
 func newEnum(enumerator *ole.IUnknown, service *Service) *Enum {

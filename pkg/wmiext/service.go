@@ -130,7 +130,9 @@ func NewLocalService(namespace string) (s *Service, err error) {
 
 // Close frees all associated memory with this service
 func (s *Service) Close() {
-	s.service.Release()
+	if s != nil && s.service != nil {
+		s.service.Release()
+	}
 }
 
 // ExecQuery executes a WQL query and returns an enumeration to iterate the result set.
