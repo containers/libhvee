@@ -1,10 +1,12 @@
+//go:build windows
+// +build windows
+
 package hypervctl
 
 import (
 	"fmt"
 
 	"github.com/containers/libhvee/pkg/wmiext"
-	"github.com/drtimf/wmi"
 )
 
 type ScsiControllerSettings struct {
@@ -38,9 +40,9 @@ func (c *ScsiControllerSettings) AddSyntheticDvdDrive(slot uint) (*SyntheticDvdD
 }
 
 func (c *ScsiControllerSettings) createSyntheticDriveInternal(slot uint, settings driveAssociation, resourceType string) error {
-	var service *wmi.Service
+	var service *wmiext.Service
 	var err error
-	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
 		return err
 	}
 	defer service.Close()
@@ -62,6 +64,6 @@ func (c *ScsiControllerSettings) createSyntheticDriveInternal(slot uint, setting
 		return err
 	}
 
-	err = wmiext.GetObjectAsObject(service, path, settings)
+	err = service.GetObjectAsObject(path, settings)
 	return err
 }

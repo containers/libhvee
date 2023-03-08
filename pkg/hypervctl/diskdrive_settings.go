@@ -1,8 +1,10 @@
+//go:build windows
+// +build windows
+
 package hypervctl
 
 import (
 	"github.com/containers/libhvee/pkg/wmiext"
-	"github.com/drtimf/wmi"
 )
 
 const SyntheticDiskDriveType = "Microsoft:Hyper-V:Synthetic Disk Drive"
@@ -39,9 +41,9 @@ func (d *SyntheticDiskDriveSettings) DefineVirtualHardDisk(vhdxFile string, befo
 }
 
 func createDiskResourceInternal(systemPath string, drivePath string, file string, settings diskAssociation, resourceType string, cb func()) error {
-	var service *wmi.Service
+	var service *wmiext.Service
 	var err error
-	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
 		return err
 	}
 	defer service.Close()
@@ -66,5 +68,5 @@ func createDiskResourceInternal(systemPath string, drivePath string, file string
 		return err
 	}
 
-	return wmiext.GetObjectAsObject(service, path, settings)
+	return service.GetObjectAsObject(path, settings)
 }

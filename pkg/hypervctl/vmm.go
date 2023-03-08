@@ -1,10 +1,12 @@
+//go:build windows
+// +build windows
+
 package hypervctl
 
 import (
 	"fmt"
 
 	"github.com/containers/libhvee/pkg/wmiext"
-	"github.com/drtimf/wmi"
 )
 
 const (
@@ -21,17 +23,17 @@ func NewVirtualMachineManager() *VirtualMachineManager {
 	return &VirtualMachineManager{}
 }
 
-func (*VirtualMachineManager) GetAll() ([]*VirtualMachine, error) {
+func (vmm *VirtualMachineManager) GetAll() ([]*VirtualMachine, error) {
 	const wql = "Select * From Msvm_ComputerSystem Where Caption = 'Virtual Machine'"
 
-	var service *wmi.Service
+	var service *wmiext.Service
 	var err error
-	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
-		return [](*VirtualMachine){}, err
+	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
+		return []*VirtualMachine{}, err
 	}
 	defer service.Close()
 
-	var enum *wmi.Enum
+	var enum *wmiext.Enum
 	if enum, err = service.ExecQuery(wql); err != nil {
 		return nil, err
 	}
@@ -39,8 +41,8 @@ func (*VirtualMachineManager) GetAll() ([]*VirtualMachine, error) {
 
 	var vms []*VirtualMachine
 	for {
-		vm := &VirtualMachine{}
-		done, err := wmiext.NextObjectWithPath(enum, vm)
+		vm := &VirtualMachine{vmm: vmm}
+		done, err := wmiext.NextObject(enum, vm)
 		if err != nil {
 			return vms, err
 		}
@@ -70,36 +72,36 @@ func (*VirtualMachineManager) GetMachine(name string) (*VirtualMachine, error) {
 	const wql = "Select * From Msvm_ComputerSystem Where Caption = 'Virtual Machine' And ElementName='%s'"
 
 	vm := &VirtualMachine{}
-	var service *wmi.Service
+	var service *wmiext.Service
 	var err error
 
-	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
 		return vm, err
 	}
 	defer service.Close()
 
-	var enum *wmi.Enum
+	var enum *wmiext.Enum
 	if enum, err = service.ExecQuery(fmt.Sprintf(wql, name)); err != nil {
 		return nil, err
 	}
 	defer enum.Close()
 
-	done, err := wmiext.NextObjectWithPath(enum, vm)
+	done, err := wmiext.NextObject(enum, vm)
 	if err != nil {
 		return vm, err
 	}
 
 	if done {
-		return vm, fmt.Errorf("Could not find virtual machine %q", name)
+		return vm, fmt.Errorf("could not find virtual machine %q", name)
 	}
 
 	return vm, nil
 }
 
 func (*VirtualMachineManager) CreateVhdxFile(path string, maxSize uint64) error {
-	var service *wmi.Service
+	var service *wmiext.Service
 	var err error
-	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
 		return err
 	}
 	defer service.Close()
@@ -110,31 +112,73 @@ func (*VirtualMachineManager) CreateVhdxFile(path string, maxSize uint64) error 
 	settings.Type = 3
 	settings.Path = path
 
-	instance, err := wmiext.CreateInstance(service, "Msvm_VirtualHardDiskSettingData", settings)
+	instance, err := service.CreateInstance("Msvm_VirtualHardDiskSettingData", settings)
 	if err != nil {
 		return err
 	}
 	defer instance.Close()
-	settingsStr := wmiext.GetCimText(instance)
+	settingsStr := instance.GetCimText()
 
-	imms, err := wmiext.GetSingletonInstance(service, "Msvm_ImageManagementService")
+	imms, err := service.GetSingletonInstance("Msvm_ImageManagementService")
 	if err != nil {
 		return err
 	}
 	defer imms.Close()
 
-	var job *wmi.Instance
+	var job *wmiext.Instance
 	var ret int32
-	err = wmiext.BeginInvoke(service, imms, "CreateVirtualHardDisk").
-		Set("VirtualDiskSettingData", settingsStr).
+	err = imms.BeginInvoke("CreateVirtualHardDisk").
+		In("VirtualDiskSettingData", settingsStr).
 		Execute().
-		Get("Job", &job).
-		Get("ReturnValue", &ret).
+		Out("Job", &job).
+		Out("ReturnValue", &ret).
 		End()
 
 	if err != nil {
-		return fmt.Errorf("Failed to create vhdx: %w", err)
+		return fmt.Errorf("failed to create vhdx: %w", err)
 	}
 
 	return waitVMResult(ret, service, job)
+}
+
+// GetSummaryInformation returns the live VM summary information for all virtual machines.
+// The requestedFields parameter controls which fields of summary information are populated.
+// SummaryRequestCommon and SummaryRequestNearAll provide predefined combinations for this
+// parameter.
+func (vmm *VirtualMachineManager) GetSummaryInformation(requestedFields SummaryRequestSet) ([]SummaryInformation, error) {
+	return vmm.getSummaryInformation("", requestedFields)
+}
+
+func (vmm *VirtualMachineManager) getSummaryInformation(settingsPath string, requestedFields SummaryRequestSet) ([]SummaryInformation, error) {
+	var service *wmiext.Service
+	var err error
+	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
+		return nil, err
+	}
+	defer service.Close()
+
+	vsms, err := service.GetSingletonInstance(VirtualSystemManagementService)
+	if err != nil {
+		return nil, err
+	}
+	defer vsms.Close()
+
+	var summary []SummaryInformation
+
+	inv := vsms.BeginInvoke("GetSummaryInformation").
+		In("RequestedInformation", []uint(requestedFields))
+
+	if len(settingsPath) > 0 {
+		inv.In("SettingData", []string{settingsPath})
+	}
+
+	err = inv.Execute().
+		Out("SummaryInformation", &summary).
+		End()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return summary, nil
 }

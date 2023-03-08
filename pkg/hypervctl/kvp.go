@@ -1,3 +1,6 @@
+//go:build windows
+// +build windows
+
 package hypervctl
 
 import (
@@ -7,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/containers/libhvee/pkg/wmiext"
-	"github.com/drtimf/wmi"
 )
 
 const (
@@ -15,7 +17,7 @@ const (
 	KvpAccessDenied       = 32769
 	KvpNotSupported       = 32770
 	KvpStatusUnknown      = 32771
-	KvpTimeoutOcurred     = 32772
+	KvpTimeoutOccurred    = 32772
 	KvpIllegalArgument    = 32773
 	KvpSystemInUse        = 32774
 	KvpInvalidState       = 32775
@@ -50,18 +52,18 @@ func (k *KvpError) Error() string {
 	return fmt.Sprintf("%s (%d)", k.message, k.ErrorCode)
 }
 
-func createKvpItem(service *wmi.Service, key string, value string) string {
-	item, err := wmiext.SpawnInstance(service, KvpExchangeDataItemName)
+func createKvpItem(service *wmiext.Service, key string, value string) (string, error) {
+	item, err := service.SpawnInstance(KvpExchangeDataItemName)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	defer item.Close()
 
 	_ = item.Put("Name", key)
 	_ = item.Put("Data", value)
 	_ = item.Put("Source", 0)
-	itemStr := wmiext.GetCimText(item)
-	return itemStr
+	itemStr := item.GetCimText()
+	return itemStr, nil
 }
 
 func parseKvpMapXml(kvpXml string) (map[string]string, error) {
@@ -112,7 +114,7 @@ func translateKvpError(source error, illegalSuggestion string) error {
 		message = "Not supported"
 	case KvpStatusUnknown:
 		message = "Status is unknown"
-	case KvpTimeoutOcurred:
+	case KvpTimeoutOccurred:
 		message = "Timeout occurred"
 	case KvpIllegalArgument:
 		message = "Illegal argument (" + illegalSuggestion + ")"

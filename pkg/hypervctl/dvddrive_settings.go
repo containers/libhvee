@@ -1,3 +1,6 @@
+//go:build windows
+// +build windows
+
 package hypervctl
 
 const SyntheticDvdDriveType = "Microsoft:Hyper-V:Synthetic DVD Drive"

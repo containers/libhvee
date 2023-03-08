@@ -1,10 +1,12 @@
+//go:build windows
+// +build windows
+
 package hypervctl
 
 import (
 	"fmt"
 
 	"github.com/containers/libhvee/pkg/wmiext"
-	"github.com/drtimf/wmi"
 )
 
 type SystemSettingsBuilder struct {
@@ -79,7 +81,7 @@ func (builder *SystemSettingsBuilder) PrepareMemorySettings(beforeAdd func(*Memo
 }
 
 func (builder *SystemSettingsBuilder) Build() (*SystemSettings, error) {
-	var service *wmi.Service
+	var service *wmiext.Service
 	var err error
 
 	if builder.PrepareSystemSettings("unnamed-vm", nil).
@@ -88,18 +90,18 @@ func (builder *SystemSettingsBuilder) Build() (*SystemSettings, error) {
 		return nil, err
 	}
 
-	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
 		return nil, err
 	}
 	defer service.Close()
 
-	systemSettingsInst, err := wmiext.SpawnInstance(service, "Msvm_VirtualSystemSettingData")
+	systemSettingsInst, err := service.SpawnInstance("Msvm_VirtualSystemSettingData")
 	if err != nil {
 		return nil, err
 	}
 	defer systemSettingsInst.Close()
 
-	err = wmiext.InstancePutAll(systemSettingsInst, builder.systemSettings)
+	err = systemSettingsInst.PutAll(builder.systemSettings)
 	if err != nil {
 		return nil, err
 	}
@@ -114,44 +116,44 @@ func (builder *SystemSettingsBuilder) Build() (*SystemSettings, error) {
 		return nil, err
 	}
 
-	vsms, err := wmiext.GetSingletonInstance(service, VirtualSystemManagementService)
+	vsms, err := service.GetSingletonInstance(VirtualSystemManagementService)
 	if err != nil {
 		return nil, err
 	}
 	defer vsms.Close()
 
-	systemStr := wmiext.GetCimText(systemSettingsInst)
+	systemStr := systemSettingsInst.GetCimText()
 
-	var job *wmi.Instance
+	var job *wmiext.Instance
 	var res int32
 	var resultingSystem string
-	err = wmiext.BeginInvoke(service, vsms, "DefineSystem").
-		Set("SystemSettings", systemStr).
-		Set("ResourceSettings", []string{memoryStr, processorStr}).
+	err = vsms.BeginInvoke("DefineSystem").
+		In("SystemSettings", systemStr).
+		In("ResourceSettings", []string{memoryStr, processorStr}).
 		Execute().
-		Get("Job", &job).
-		Get("ResultingSystem", &resultingSystem).
-		Get("ReturnValue", &res).End()
+		Out("Job", &job).
+		Out("ResultingSystem", &resultingSystem).
+		Out("ReturnValue", &res).End()
 
 	if err != nil {
-		return nil, fmt.Errorf("Failed to define system: %w", err)
+		return nil, fmt.Errorf("failed to define system: %w", err)
 	}
 
 	err = waitVMResult(res, service, job)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to define system: %w", err)
+		return nil, fmt.Errorf("failed to define system: %w", err)
 	}
 
-	newSettings, err := wmiext.FindFirstRelatedInstance(service, resultingSystem, "Msvm_VirtualSystemSettingData")
+	newSettings, err := service.FindFirstRelatedInstance(resultingSystem, "Msvm_VirtualSystemSettingData")
 	if err != nil {
 		return nil, err
 	}
-	path, err := wmiext.ConvertToPath(newSettings)
+	path, err := newSettings.Path()
 	if err != nil {
 		return nil, err
 	}
 
-	if err = wmiext.GetObjectAsObject(service, path, builder.systemSettings); err != nil {
+	if err = service.GetObjectAsObject(path, builder.systemSettings); err != nil {
 		return nil, err
 	}
 

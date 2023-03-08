@@ -112,7 +112,7 @@ loop:
 			break loop
 		case 'n':
 			fmt.Printf("n\n")
-			return errors.New("Aborted by request")
+			return errors.New("aborted by request")
 		}
 	}
 

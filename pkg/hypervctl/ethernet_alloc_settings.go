@@ -1,3 +1,6 @@
+//go:build windows
+// +build windows
+
 package hypervctl
 
 const EthernetPortAllocationResourceType = "Microsoft:Hyper-V:Ethernet Connection"

@@ -1,10 +1,12 @@
+//go:build windows
+// +build windows
+
 package hypervctl
 
 import (
 	"fmt"
 
 	"github.com/containers/libhvee/pkg/wmiext"
-	"github.com/drtimf/wmi"
 )
 
 const SyntheticEthernetPortResourceType = "Microsoft:Hyper-V:Synthetic Ethernet Port"
@@ -64,19 +66,19 @@ func (p *SyntheticEthernetPortSettings) DefineEthernetPortConnection(switchName 
 
 	wql := fmt.Sprintf(wqlFormat, wqlProperty, wqlValue)
 
-	var service *wmi.Service
+	var service *wmiext.Service
 	var err error
-	if service, err = wmi.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
 		return nil, err
 	}
 	defer service.Close()
 
-	switchInst, err := wmiext.FindFirstInstance(service, wql)
+	switchInst, err := service.FindFirstInstance(wql)
 	if err != nil {
 		return nil, err
 	}
 	defer switchInst.Close()
-	switchPath, err := wmiext.ConvertToPath(switchInst)
+	switchPath, err := switchInst.Path()
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +101,7 @@ func (p *SyntheticEthernetPortSettings) DefineEthernetPortConnection(switchName 
 		return nil, err
 	}
 
-	if err := wmiext.GetObjectAsObject(service, path, connectSettings); err != nil {
+	if err := service.GetObjectAsObject(path, connectSettings); err != nil {
 		return nil, err
 	}
 

@@ -6,7 +6,6 @@ package wmiext
 import (
 	"errors"
 	"fmt"
-	"math"
 	"reflect"
 	"strconv"
 	"strings"
@@ -14,7 +13,6 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/drtimf/wmi"
 	"github.com/go-ole/go-ole"
 )
 
@@ -26,155 +24,158 @@ var (
 	WindowsEpoch = time.Date(1601, 1, 1, 0, 0, 0, 0, time.UTC)
 )
 
-func RefetchObject(service *wmi.Service, instance *wmi.Instance) (*wmi.Instance, error) {
-	path, err := ConvertToPath(instance)
-	if err != nil {
-		return instance, err
-	}
-	return service.GetObject(path)
+type Instance struct {
+	object  *ole.IUnknown
+	vTable  *IWbemClassObjectVtbl
+	service *Service
 }
 
-func ConvertToPath(instance *wmi.Instance) (string, error) {
-	ref, _, _, err := instance.Get(WmiPathKey)
+type IWbemClassObjectVtbl struct {
+	QueryInterface          uintptr
+	AddRef                  uintptr
+	Release                 uintptr
+	GetQualifierSet         uintptr
+	Get                     uintptr
+	Put                     uintptr
+	Delete                  uintptr
+	GetNames                uintptr
+	BeginEnumeration        uintptr
+	Next                    uintptr
+	EndEnumeration          uintptr
+	GetPropertyQualifierSet uintptr
+	Clone                   uintptr
+	GetObjectText           uintptr
+	SpawnDerivedClass       uintptr
+	SpawnInstance           uintptr
+	CompareTo               uintptr
+	GetPropertyOrigin       uintptr
+	InheritsFrom            uintptr
+	GetMethod               uintptr
+	PutMethod               uintptr
+	DeleteMethod            uintptr
+	BeginMethodEnumeration  uintptr
+	NextMethod              uintptr
+	EndMethodEnumeration    uintptr
+	GetMethodQualifierSet   uintptr
+	GetMethodOrigin         uintptr
+}
+
+type CIMTYPE_ENUMERATION uint32
+
+const (
+	CIM_ILLEGAL    CIMTYPE_ENUMERATION = 0xFFF
+	CIM_EMPTY      CIMTYPE_ENUMERATION = 0
+	CIM_SINT8      CIMTYPE_ENUMERATION = 16
+	CIM_UINT8      CIMTYPE_ENUMERATION = 17
+	CIM_SINT16     CIMTYPE_ENUMERATION = 2
+	CIM_UINT16     CIMTYPE_ENUMERATION = 18
+	CIM_SINT32     CIMTYPE_ENUMERATION = 3
+	CIM_UINT32     CIMTYPE_ENUMERATION = 19
+	CIM_SINT64     CIMTYPE_ENUMERATION = 20
+	CIM_UINT64     CIMTYPE_ENUMERATION = 21
+	CIM_REAL32     CIMTYPE_ENUMERATION = 4
+	CIM_REAL64     CIMTYPE_ENUMERATION = 5
+	CIM_BOOLEAN    CIMTYPE_ENUMERATION = 11
+	CIM_STRING     CIMTYPE_ENUMERATION = 8
+	CIM_DATETIME   CIMTYPE_ENUMERATION = 101
+	CIM_REFERENCE  CIMTYPE_ENUMERATION = 102
+	CIM_CHAR16     CIMTYPE_ENUMERATION = 103
+	CIM_OBJECT     CIMTYPE_ENUMERATION = 13
+	CIM_FLAG_ARRAY CIMTYPE_ENUMERATION = 0x2000
+)
+
+type WBEM_FLAVOR_TYPE uint32
+
+const (
+	WBEM_FLAVOR_DONT_PROPAGATE                  WBEM_FLAVOR_TYPE = 0
+	WBEM_FLAVOR_FLAG_PROPAGATE_TO_INSTANCE      WBEM_FLAVOR_TYPE = 0x1
+	WBEM_FLAVOR_FLAG_PROPAGATE_TO_DERIVED_CLASS WBEM_FLAVOR_TYPE = 0x2
+	WBEM_FLAVOR_MASK_PROPAGATION                WBEM_FLAVOR_TYPE = 0xf
+	WBEM_FLAVOR_OVERRIDABLE                     WBEM_FLAVOR_TYPE = 0
+	WBEM_FLAVOR_NOT_OVERRIDABLE                 WBEM_FLAVOR_TYPE = 0x10
+	WBEM_FLAVOR_MASK_PERMISSIONS                WBEM_FLAVOR_TYPE = 0x10
+	WBEM_FLAVOR_ORIGIN_LOCAL                    WBEM_FLAVOR_TYPE = 0
+	WBEM_FLAVOR_ORIGIN_PROPAGATED               WBEM_FLAVOR_TYPE = 0x20
+	WBEM_FLAVOR_ORIGIN_SYSTEM                   WBEM_FLAVOR_TYPE = 0x40
+	WBEM_FLAVOR_MASK_ORIGIN                     WBEM_FLAVOR_TYPE = 0x60
+	WBEM_FLAVOR_NOT_AMENDED                     WBEM_FLAVOR_TYPE = 0
+	WBEM_FLAVOR_AMENDED                         WBEM_FLAVOR_TYPE = 0x80
+	WBEM_FLAVOR_MASK_AMENDED                    WBEM_FLAVOR_TYPE = 0x80
+)
+
+func newInstance(object *ole.IUnknown, service *Service) *Instance {
+	instance := &Instance{
+		object:  object,
+		vTable:  (*IWbemClassObjectVtbl)(unsafe.Pointer(object.RawVTable)),
+		service: service,
+	}
+
+	return instance
+}
+
+// Close cleans up all memory associated with this instance.
+func (i *Instance) Close() {
+	if i != nil && i.object != nil {
+		i.object.Release()
+	}
+}
+
+// GetClassName Gets the WMI class name for this WMI object instance
+func (i *Instance) GetClassName() (className string, err error) {
+	return i.GetAsString(`__CLASS`)
+}
+
+// Path gets the WMI object path of this instance
+func (i *Instance) Path() (string, error) {
+	ref, _, _, err := i.GetAsAny(WmiPathKey)
 	return ref.(string), err
 }
 
-func IsReferenceProperty(instance *wmi.Instance, name string) (bool, error) {
-	_, cimType, _, err := instance.Get(name)
-	return cimType == wmi.CIM_REFERENCE, err
+// IsReferenceProperty returns whether the property is of type CIM_REFERENCE, a string which points to
+// an object path of another instance.
+func (i *Instance) IsReferenceProperty(name string) (bool, error) {
+	_, cimType, _, err := i.GetAsAny(name)
+	return cimType == CIM_REFERENCE, err
 }
 
-func GetClassInstance(service *wmi.Service, obj *wmi.Instance) (*wmi.Instance, error) {
-	name, err := obj.GetClassName()
-	if err != nil {
-		return nil, err
+// SpawnInstance create a new WMI object instance that is zero-initialized. The returned instance
+// will not respect expected default values, which must be populated by other means.
+func (i *Instance) SpawnInstance() (instance *Instance, err error) {
+	var res uintptr
+	var newUnknown *ole.IUnknown
+
+	res, _, _ = syscall.SyscallN(
+		i.vTable.SpawnInstance,               // IWbemClassObject::SpawnInstance(
+		uintptr(unsafe.Pointer(i.object)),    // IWbemClassObject ptr
+		uintptr(0),                           // [in]  long             lFlags,
+		uintptr(unsafe.Pointer(&newUnknown))) // [out] IWbemClassObject **ppNewInstance)
+	if res != 0 {
+		return nil, ole.NewError(res)
 	}
-	return service.GetObject(name)
+
+	return newInstance(newUnknown, i.service), nil
 }
 
-func GetObjectAsObject(service *wmi.Service, objPath string, target interface{}) error {
-	instance, err := service.GetObject(objPath)
-	if err != nil {
-		return err
-	}
-	defer instance.Close()
-
-	return InstanceGetAll(instance, target)
-}
-
-func GetSingletonInstance(service *wmi.Service, className string) (*wmi.Instance, error) {
-	var (
-		enum     *wmi.Enum
-		instance *wmi.Instance
-		err      error
-	)
-
-	if enum, err = service.CreateInstanceEnum(className); err != nil {
-		return nil, err
-	}
-	defer enum.Close()
-
-	if instance, err = enum.Next(); err != nil {
-		return nil, err
-	}
-
-	return instance, nil
-}
-
-func FindFirstInstance(service *wmi.Service, wql string) (*wmi.Instance, error) {
-	var enum *wmi.Enum
-	var err error
-	if enum, err = service.ExecQuery(wql); err != nil {
-		return nil, err
-	}
-	defer enum.Close()
-
-	instance, err := enum.Next()
-	if err != nil {
-		return nil, err
-	}
-
-	if instance == nil {
-		return nil, errors.New("No results found.")
-	}
-
-	return instance, nil
-}
-
-func FindFirstRelatedInstance(service *wmi.Service, objPath string, className string) (*wmi.Instance, error) {
-	wql := fmt.Sprintf("ASSOCIATORS OF {%s} WHERE ResultClass = %s", objPath, className)
-	return FindFirstInstance(service, wql)
-}
-
-func FindFirstObject(service *wmi.Service, wql string, target interface{}) error {
-	var enum *wmi.Enum
-	var err error
-	if enum, err = service.ExecQuery(wql); err != nil {
-		return err
-	}
-	defer enum.Close()
-
-	done, err := NextObjectWithPath(enum, target)
-	if err != nil {
-		return err
-	}
-
-	if done {
-		return errors.New("no results found")
-	}
-
-	return nil
-}
-
-func CreateInstance(service *wmi.Service, className string, src interface{}) (*wmi.Instance, error) {
-	instance, err := SpawnInstance(service, className)
-	if err != nil {
-		return nil, err
-	}
-
-	return instance, InstancePutAll(instance, src)
-}
-
-func SpawnInstance(service *wmi.Service, className string) (*wmi.Instance, error) {
-	var class *wmi.Instance
-	var err error
-	if class, err = service.GetObject(className); err != nil {
-		return nil, err
-	}
-	defer class.Close()
-
-	return class.SpawnInstance()
-}
-
-func CloneInstance(instance *wmi.Instance) (*wmi.Instance, error) {
-	classObj := extractClassObj(instance)
-	vTable := (*wmi.IWbemClassObjectVtbl)(unsafe.Pointer(classObj.RawVTable))
+// CloneInstance create a new cloned copy of this WMI instance.
+func (i *Instance) CloneInstance() (*Instance, error) {
+	classObj := i.object
+	vTable := (*IWbemClassObjectVtbl)(unsafe.Pointer(classObj.RawVTable))
 	var cloned *ole.IUnknown
 
-	ret, _, _ := syscall.SyscallN(vTable.Clone, // IWbemClassObject::Put
-		uintptr(unsafe.Pointer(classObj)),
-		uintptr(unsafe.Pointer(&cloned)))
+	ret, _, _ := syscall.SyscallN(
+		vTable.Clone,                      // IWbemClassObject::Clone(
+		uintptr(unsafe.Pointer(classObj)), // IWbemClassObject ptr
+		uintptr(unsafe.Pointer(&cloned)))  // [out] IWbemClassObject **ppCopy)
 	if ret != 0 {
 		return nil, ole.NewError(ret)
 	}
 
-	// Copy the full struct to copy over the vtable, then change the first
-	// pointer to the new cloned handle
-	copy := *instance
-	ref := (**ole.IUnknown)(unsafe.Pointer(&copy))
-	*ref = cloned
-
-	return &copy, nil
+	return newInstance(cloned, i.service), nil
 }
 
-// In order to implement the following 2 funcs we need the underlying
-// class object for method invocation, which unfortunately isn't exported
-func extractClassObj(instance *wmi.Instance) *ole.IUnknown {
-	// First member of the struct
-	return *(**ole.IUnknown)(unsafe.Pointer(instance))
-}
-
-func InstancePutAll(instance *wmi.Instance, src interface{}) error {
+// PutAll sets all fields of this instance to the passed src parameter's fields, converting accordingly.
+// The src parameter must be a pointer to a struct, otherwise an error will be returned.
+func (i *Instance) PutAll(src interface{}) error {
 	val := reflect.ValueOf(src)
 	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
@@ -184,26 +185,21 @@ func InstancePutAll(instance *wmi.Instance, src interface{}) error {
 		return errors.New("not a struct or pointer to struct")
 	}
 
-	props, err := instance.GetProperties()
+	props, err := i.GetAllProperties()
 	if err != nil {
 		return err
 	}
 
-	propMap := make(map[string]struct{})
-	for _, prop := range props {
-		propMap[prop.Name] = struct{}{}
-	}
-
-	return instancePutAllTraverse(instance, val, propMap)
+	return i.instancePutAllTraverse(val, props)
 }
 
-func instancePutAllTraverse(instance *wmi.Instance, val reflect.Value, propMap map[string]struct{}) error {
-	for i := 0; i < val.NumField(); i++ {
-		fieldVal := val.Field(i)
-		fieldType := val.Type().Field(i)
+func (i *Instance) instancePutAllTraverse(val reflect.Value, propMap map[string]interface{}) error {
+	for j := 0; j < val.NumField(); j++ {
+		fieldVal := val.Field(j)
+		fieldType := val.Type().Field(j)
 
 		if fieldType.Type.Kind() == reflect.Struct && fieldType.Anonymous {
-			if err := instancePutAllTraverse(instance, fieldVal, propMap); err != nil {
+			if err := i.instancePutAllTraverse(fieldVal, propMap); err != nil {
 				return err
 			}
 			continue
@@ -224,7 +220,7 @@ func instancePutAllTraverse(instance *wmi.Instance, val reflect.Value, propMap m
 			continue
 		}
 
-		if err := InstancePut(instance, fieldType.Name, fieldVal.Interface()); err != nil {
+		if err := i.Put(fieldType.Name, fieldVal.Interface()); err != nil {
 			return err
 		}
 	}
@@ -232,63 +228,155 @@ func instancePutAllTraverse(instance *wmi.Instance, val reflect.Value, propMap m
 	return nil
 }
 
-// Alternative impl of instance.Put that supports direct passing of variants
-// Once this is contributed back to wmi, this func can go
-func InstancePut(i *wmi.Instance, name string, value interface{}) (err error) {
-	var vtValue ole.VARIANT
+// Put sets the specified property to the passed Golang value, converting appropriately.
+func (i *Instance) Put(name string, value interface{}) (err error) {
+	var variant ole.VARIANT
 
 	switch cast := value.(type) {
 	case ole.VARIANT:
-		vtValue = cast
+		variant = cast
 	case *ole.VARIANT:
-		vtValue = *cast
+		variant = *cast
 	default:
-		vtValue, err = NewAutomationVariant(value)
+		variant, err = NewAutomationVariant(value)
 		if err != nil {
 			return err
 		}
 	}
 
-	var nameUTF16 *uint16
-	if nameUTF16, err = syscall.UTF16PtrFromString(name); err != nil {
+	var wszName *uint16
+	if wszName, err = syscall.UTF16PtrFromString(name); err != nil {
 		return
 	}
 
-	classObj := extractClassObj(i)
-	vTable := (*wmi.IWbemClassObjectVtbl)(unsafe.Pointer(classObj.RawVTable))
-	ret, _, _ := syscall.SyscallN(vTable.Put, // IWbemClassObject::Put
-		uintptr(unsafe.Pointer(classObj)),
-		uintptr(unsafe.Pointer(nameUTF16)), // LPCWSTR wszName
-		uintptr(0),                         // LONG lFlags
-		uintptr(unsafe.Pointer(&vtValue)),  // VARIANT *pVal
-		uintptr(0),                         // CIMTYPE Type
-		uintptr(0))
-	if ret != 0 {
-		return ole.NewError(ret)
+	classObj := i.object
+	vTable := (*IWbemClassObjectVtbl)(unsafe.Pointer(classObj.RawVTable))
+	res, _, _ := syscall.SyscallN(
+		vTable.Put,                        // IWbemClassObject::Put(
+		uintptr(unsafe.Pointer(classObj)), // IWbemClassObject ptr
+		uintptr(unsafe.Pointer(wszName)),  // [in] LPCWSTR wszName,
+		uintptr(0),                        // [in] long    lFlags,
+		uintptr(unsafe.Pointer(&variant)), // [in] VARIANT *pVal,
+		uintptr(0))                        // [in] CIMTYPE Type)
+	if res != 0 {
+		return ole.NewError(res)
 	}
 
-	_ = vtValue.Clear()
+	_ = variant.Clear()
 	return
 }
 
-func GetCimText(item *wmi.Instance) string {
+// GetCimText returns the CIM XML representation of this instance. Some WMI methods use a string
+// parameter to represent a full complex object, and this method is used to generate
+// the expected format.
+func (i *Instance) GetCimText() string {
 	type wmiWbemTxtSrcVtable struct {
 		QueryInterface uintptr
 		AddRef         uintptr
 		Release        uintptr
 		GetTxt         uintptr
 	}
+	const CIM_XML_FORMAT = 1
+
+	classObj := i.object
 
 	vTable := (*wmiWbemTxtSrcVtable)(unsafe.Pointer(wmiWbemTxtLocator.RawVTable))
 	var retString *uint16
-	_, _, _ = syscall.SyscallN(vTable.GetTxt, 0, 0, uintptr(unsafe.Pointer(extractClassObj(item))), 1, 0, uintptr(unsafe.Pointer(&retString)))
-
+	res, _, _ := syscall.SyscallN(
+		vTable.GetTxt,                           // IWbemObjectTextSrc::GetText()
+		uintptr(unsafe.Pointer(wmiWbemLocator)), // IWbemObjectTextSrc ptr
+		uintptr(0),                              // [in]  long             lFlags
+		uintptr(unsafe.Pointer(classObj)),       // [in]  IWbemClassObject *pObj
+		uintptr(CIM_XML_FORMAT),                 // [in]  ULONG            uObjTextFormat,
+		uintptr(0),                              // [in]  IWbemContext     *pCtx,
+		uintptr(unsafe.Pointer(&retString)))     // [out] BSTR             *strText)
+	if res != 0 {
+		return ""
+	}
 	itemStr := ole.BstrToString(retString)
 	return itemStr
 }
 
-func GetPropertyAsUint(instance *wmi.Instance, name string) (uint, error) {
-	val, _, _, err := instance.Get(name)
+// GetAll gets all fields that map to a target struct and populates all struct fields according to
+// the expected type information. The target parameter should be a pointer to a struct, and
+// will return an error otherwise.
+func (i *Instance) GetAll(target interface{}) error {
+	elem := reflect.ValueOf(target)
+	if elem.Kind() != reflect.Ptr || elem.IsNil() {
+		return errors.New("invalid destination type for mapping a WMI instance to an object")
+	}
+
+	// deref pointer
+	elem = elem.Elem()
+	var err error
+
+	if err = i.BeginEnumeration(); err != nil {
+		return err
+	}
+
+	properties := make(map[string]*ole.VARIANT)
+
+	for {
+		var name string
+		var value *ole.VARIANT
+		var done bool
+
+		if done, name, value, _, _, err = i.NextAsVariant(); err != nil {
+			return err
+		}
+
+		if done {
+			break
+		}
+
+		if value != nil {
+			properties[name] = value
+		}
+	}
+
+	defer func() {
+		for _, v := range properties {
+			_ = v.Clear()
+		}
+	}()
+
+	_ = i.EndEnumeration()
+
+	return i.instanceGetAllPopulate(elem, elem.Type(), properties)
+}
+
+// GetAsAny gets a property and converts it to a Golang type that matches the internal
+// variant automation type passed back from WMI. For usage with predictable static
+// type mapping, use GetAsString(), GetAsUint(), or GetAll() instead of this method.
+func (i *Instance) GetAsAny(name string) (interface{}, CIMTYPE_ENUMERATION, WBEM_FLAVOR_TYPE, error) {
+	variant, cimType, flavor, err := i.GetAsVariant(name)
+	if err != nil {
+		return nil, cimType, flavor, err
+	}
+	defer variant.Clear()
+
+	// Since there is no type information only perform the stock conversion
+	result := convertToGenericValue(variant)
+
+	return result, cimType, flavor, err
+}
+
+// GetAsString gets a property value as a string value, converting if necessary
+func (i *Instance) GetAsString(name string) (value string, err error) {
+	variant, _, _, err := i.GetAsVariant(name)
+	if err != nil || variant == nil {
+		return "", err
+	}
+	defer variant.Clear()
+
+	// TODO: replace with something better
+	return fmt.Sprintf("%v", convertToGenericValue(variant)), nil
+}
+
+// GetAsUint gets a property value as a uint value, if conversion is possible. Otherwise,
+// returns an error.
+func (i *Instance) GetAsUint(name string) (uint, error) {
+	val, _, _, err := i.GetAsAny(name)
 	if err != nil {
 		return 0, err
 	}
@@ -318,74 +406,164 @@ func GetPropertyAsUint(instance *wmi.Instance, name string) (uint, error) {
 		parse, err := strconv.ParseUint(ret, 10, 64)
 		return uint(parse), err
 	default:
-		return 0, fmt.Errorf("Type conversion from %T on param %s not supported", val, name)
+		return 0, fmt.Errorf("type conversion from %T on param %s not supported", val, name)
 	}
 }
 
-func InstanceGetAll(instance *wmi.Instance, target interface{}) error {
-	elem := reflect.ValueOf(target)
-	if elem.Kind() != reflect.Ptr || elem.IsNil() {
-		return errors.New("invalid destination type for mapping a WMI instance to an object")
-	}
-
-	// deref pointer
-	elem = elem.Elem()
+// GetAsVariant obtains a specified property value, if it exists.
+func (i *Instance) GetAsVariant(name string) (*ole.VARIANT, CIMTYPE_ENUMERATION, WBEM_FLAVOR_TYPE, error) {
+	var variant ole.VARIANT
 	var err error
+	var wszName *uint16
+	var cimType CIMTYPE_ENUMERATION
+	var flavor WBEM_FLAVOR_TYPE
 
-	if err = enumerateWithSystem(instance); err != nil {
-		return err
+	if wszName, err = syscall.UTF16PtrFromString(name); err != nil {
+		return nil, 0, 0, err
 	}
 
-	properties := make(map[string](*ole.VARIANT))
+	classObj := i.object
+	vTable := (*IWbemClassObjectVtbl)(unsafe.Pointer(classObj.RawVTable))
+
+	res, _, _ := syscall.SyscallN(
+		vTable.Get,                        // IWbemClassObject::Get(
+		uintptr(unsafe.Pointer(classObj)), // IWbemClassObject ptr
+		uintptr(unsafe.Pointer(wszName)),  // [in]            LPCWSTR wszName,
+		uintptr(0),                        // [in]            long    lFlags,
+		uintptr(unsafe.Pointer(&variant)), // [out]           VARIANT *pVal,
+		uintptr(unsafe.Pointer(&cimType)), // [out, optional] CIMTYPE *pType,
+		uintptr(unsafe.Pointer(&flavor)))  // [out, optional] long    *plFlavor)
+	if res != 0 {
+		return nil, 0, 0, ole.NewError(res)
+	}
+
+	return &variant, cimType, flavor, nil
+}
+
+// Next retrieves the next property as a Golang type when iterating the properties using an enumerator
+// created by BeginEnumeration(). The returned value's type represents the internal automation type
+// used by WMI. It is usually preferred to use GetAsXXX(), GetAll(), or GetAll Properties() over this
+// method.
+func (i *Instance) Next() (done bool, name string, value interface{}, cimType CIMTYPE_ENUMERATION, flavor WBEM_FLAVOR_TYPE, err error) {
+	var variant *ole.VARIANT
+	done, name, variant, cimType, flavor, err = i.NextAsVariant()
+
+	if err == nil && !done {
+		defer variant.Clear()
+		value = convertToGenericValue(variant)
+	}
+
+	return
+}
+
+// NextAsVariant retrieves the next property as a VARIANT type when iterating the properties using an enumerator
+// created by BeginEnumeration(). The returned value's type represents the internal automation type
+// used by WMI. It is usually preferred to use GetAsXXX(), GetAll(), or GetAllProperties() over this
+// method. Callers are responsible for clearing the VARIANT, otherwise associated memory will leak.
+func (i *Instance) NextAsVariant() (bool, string, *ole.VARIANT, CIMTYPE_ENUMERATION, WBEM_FLAVOR_TYPE, error) {
+	var res uintptr
+	var strName *uint16
+	var variant ole.VARIANT
+	var cimType CIMTYPE_ENUMERATION
+	var flavor WBEM_FLAVOR_TYPE
+
+	res, _, _ = syscall.SyscallN(
+		i.vTable.Next,                     // IWbemClassObject::Next(
+		uintptr(unsafe.Pointer(i.object)), // IWbemClassObject ptr
+		uintptr(0),                        // [in]            long    lFlags,
+		uintptr(unsafe.Pointer(&strName)), // [out]           BSTR    *strName,
+		uintptr(unsafe.Pointer(&variant)), // [out]           VARIANT *pVal,
+		uintptr(unsafe.Pointer(&cimType)), // [out, optional] CIMTYPE *pType,
+		uintptr(unsafe.Pointer(&flavor)))  // [out, optional] long    *plFlavor
+	if res < 0 {
+		return false, "", nil, cimType, flavor, ole.NewError(res)
+	}
+
+	if res == WBEM_S_NO_MORE_DATA {
+		return true, "", nil, cimType, flavor, nil
+	}
+
+	defer ole.SysFreeString((*int16)(unsafe.Pointer(strName)))
+	name := ole.BstrToString(strName)
+
+	return false, name, &variant, cimType, flavor, nil
+}
+
+// GetAllProperties gets all properties on this instance. The returned map is keyed by the field name and the value
+// is a Golang type which matches the WMI internal implementation. For static type conversions,
+// it's recommended to use either GetAll(), which uses struct fields for type information, or
+// the GetAsXXX() methods.
+func (i *Instance) GetAllProperties() (map[string]interface{}, error) {
+	var err error
+	properties := make(map[string]interface{})
+
+	if err = i.BeginEnumeration(); err != nil {
+		return nil, err
+	}
+
+	defer i.EndEnumeration()
 
 	for {
 		var name string
-		var value *ole.VARIANT
+		var value interface{}
 		var done bool
 
-		if done, name, value, _, _, err = instance.NextAsVariant(); err != nil {
-			return err
+		if done, name, value, _, _, err = i.Next(); err != nil || done {
+			return properties, err
 		}
 
-		if done {
-			break
-		}
-
-		if value != nil {
-			properties[name] = value
-		}
+		properties[name] = value
 	}
-
-	defer func() {
-		for _, v := range properties {
-			_ = v.Clear()
-		}
-	}()
-
-	_ = instance.EndEnumeration()
-
-	return instanceGetAllPopulate(elem, elem.Type(), properties)
 }
 
-func instanceGetAllPopulate(elem reflect.Value, elemType reflect.Type, properties map[string]*ole.VARIANT) error {
+// GetMethodParameters returns a WMI class object which represents the [in] method parameters for a method invocation.
+// This is an advanced method, used for dynamic introspection or manual method invocation. In most
+// cases it is recommended to use BeginInvoke() instead, which constructs the parameter payload
+// automatically.
+func (i *Instance) GetMethodParameters(method string) (*Instance, error) {
+	var err error
+	var res uintptr
+	var inSignature *ole.IUnknown
+
+	var wszName *uint16
+	if wszName, err = syscall.UTF16PtrFromString(method); err != nil {
+		return nil, err
+	}
+
+	res, _, _ = syscall.SyscallN(
+		i.vTable.GetMethod,                    // IWbemClassObject::GetMethod(
+		uintptr(unsafe.Pointer(i.object)),     // IWbemClassObject ptr
+		uintptr(unsafe.Pointer(wszName)),      // [in]  LPCWSTR          wszName
+		uintptr(0),                            // [in]  long             lFlags,
+		uintptr(unsafe.Pointer(&inSignature)), // [out] IWbemClassObject **ppInSignature,
+		uintptr(0))                            // [out] IWbemClassObject **ppOutSignature)
+	if res != 0 {
+		return nil, ole.NewError(res)
+	}
+
+	return newInstance(inSignature, i.service), nil
+}
+
+func (i *Instance) instanceGetAllPopulate(elem reflect.Value, elemType reflect.Type, properties map[string]*ole.VARIANT) error {
 	var err error
 
-	for i := 0; i < elemType.NumField(); i++ {
-		fieldType := elemType.Field(i)
-		fieldVal := elem.Field(i)
+	for j := 0; j < elemType.NumField(); j++ {
+		fieldType := elemType.Field(j)
+		fieldVal := elem.Field(j)
 
 		if !fieldType.IsExported() {
 			continue
 		}
 
 		if fieldType.Type.Kind() == reflect.Struct && fieldType.Anonymous {
-			if err := instanceGetAllPopulate(fieldVal, fieldType.Type, properties); err != nil {
+			if err := i.instanceGetAllPopulate(fieldVal, fieldType.Type, properties); err != nil {
 				return err
 			}
 			continue
 		}
 
 		fieldName := fieldType.Name
+
 		if strings.HasPrefix(fieldName, "S__") {
 			fieldName = fieldName[1:]
 		}
@@ -404,23 +582,17 @@ func instanceGetAllPopulate(elem reflect.Value, elemType reflect.Type, propertie
 	return nil
 }
 
-func convertToGoType(variant *ole.VARIANT, outputValue reflect.Value, outputType reflect.Type) (value interface{}, err error) {
-	switch outputValue.Interface().(type) {
-	case time.Time:
-		return convertDataTimeToTime(variant)
-	case *time.Time:
-		x, err := convertDataTimeToTime(variant)
-		return &x, err
-	}
+// BeginEnumeration begins iterating the property list on this instance. This is an advanced method.
+// In most cases, the GetAsXXX() methods, GetAll(), and GetAllProperties() methods should be
+// preferred.
+func (i *Instance) BeginEnumeration() error {
+	classObj := i.object
+	vTable := (*IWbemClassObjectVtbl)(unsafe.Pointer(classObj.RawVTable))
 
-	return wmi.VariantToGoType(variant, outputType)
-}
-
-func enumerateWithSystem(instance *wmi.Instance) (err error) {
-	classObj := extractClassObj(instance)
-	vTable := (*wmi.IWbemClassObjectVtbl)(unsafe.Pointer(classObj.RawVTable))
-
-	result, _, _ := syscall.SyscallN(vTable.BeginEnumeration, uintptr(unsafe.Pointer(classObj)), 0)
+	result, _, _ := syscall.SyscallN(
+		vTable.BeginEnumeration,           // IWbemClassObject::BeginEnumeration(
+		uintptr(unsafe.Pointer(classObj)), // IWbemClassObject ptr,
+		uintptr(0))                        // [in] long lEnumFlags) // 0 = defaults
 	if result != 0 {
 		return ole.NewError(result)
 	}
@@ -428,173 +600,35 @@ func enumerateWithSystem(instance *wmi.Instance) (err error) {
 	return nil
 }
 
-// Automation variants do not follow the OLE rules, instead they use the following mapping:
-// sint8	VT_I2	Signed 8-bit integer.
-// sint16	VT_I2	Signed 16-bit integer.
-// sint32	VT_I4	Signed 32-bit integer.
-// sint64	VT_BSTR	Signed 64-bit integer in string form. This type follows hexadecimal or decimal format
-//                  according to the American National Standards Institute (ANSI) C rules.
-// real32	VT_R4	4-byte floating-point value that follows the Institute of Electrical and Electronics
-//                  Engineers, Inc. (IEEE) standard.
-// real64	VT_R8	8-byte floating-point value that follows the IEEE standard.
-// uint8	VT_UI1	Unsigned 8-bit integer.
-// uint16	VT_I4	Unsigned 16-bit integer.
-// uint32	VT_I4	Unsigned 32-bit integer.
-// uint64	VT_BSTR	Unsigned 64-bit integer in string form. This type follows hexadecimal or decimal format
-//                  according to ANSI C rules.
-//gocyclo:ignore
-func NewAutomationVariant(value interface{}) (ole.VARIANT, error) {
-	switch cast := value.(type) {
-	case bool:
-		if cast {
-			return ole.NewVariant(ole.VT_BOOL, 0xffff), nil
-		} else {
-			return ole.NewVariant(ole.VT_BOOL, 0), nil
-		}
-	case int8:
-		return ole.NewVariant(ole.VT_I2, int64(cast)), nil
-	case []int8:
-		return CreateNumericArrayVariant(cast, ole.VT_I2)
-	case int16:
-		return ole.NewVariant(ole.VT_I2, int64(cast)), nil
-	case []int16:
-		return CreateNumericArrayVariant(cast, ole.VT_I2)
-	case int32:
-		return ole.NewVariant(ole.VT_I4, int64(cast)), nil
-	case []int32:
-		return CreateNumericArrayVariant(cast, ole.VT_I4)
-	case int64:
-		s := fmt.Sprintf("%d", cast)
-		return ole.NewVariant(ole.VT_BSTR, int64(uintptr(unsafe.Pointer(ole.SysAllocStringLen(s))))), nil
-	case []int64:
-		strings := make([]string, len(cast))
-		for i, num := range cast {
-			strings[i] = fmt.Sprintf("%d", num)
-		}
-		return CreateStringArrayVariant(strings)
-	case float32:
-		return ole.NewVariant(ole.VT_R4, int64(math.Float32bits(cast))), nil
-	case float64:
-		return ole.NewVariant(ole.VT_R8, int64(math.Float64bits(cast))), nil
-	case uint8:
-		return ole.NewVariant(ole.VT_UI1, int64(cast)), nil
-	case []uint8:
-		return CreateNumericArrayVariant(cast, ole.VT_UI1)
-	case uint16:
-		return ole.NewVariant(ole.VT_I4, int64(cast)), nil
-	case []uint16:
-		return CreateNumericArrayVariant(cast, ole.VT_I4)
-	case uint32:
-		return ole.NewVariant(ole.VT_I4, int64(cast)), nil
-	case []uint32:
-		return CreateNumericArrayVariant(cast, ole.VT_I4)
-	case uint64:
-		s := fmt.Sprintf("%d", cast)
-		return ole.NewVariant(ole.VT_BSTR, int64(uintptr(unsafe.Pointer(ole.SysAllocStringLen(s))))), nil
-	case []uint64:
-		strings := make([]string, len(cast))
-		for i, num := range cast {
-			strings[i] = fmt.Sprintf("%d", num)
-		}
-		return CreateStringArrayVariant(strings)
-
-	// Assume 32 bit for generic (u)ints
-	case int:
-		return ole.NewVariant(ole.VT_I4, int64(cast)), nil
-	case uint:
-		return ole.NewVariant(ole.VT_I4, int64(cast)), nil
-	case []int:
-		return CreateNumericArrayVariant(cast, ole.VT_I4)
-	case []uint:
-		return CreateNumericArrayVariant(cast, ole.VT_I4)
-
-	case string:
-		return ole.NewVariant(ole.VT_BSTR, int64(uintptr(unsafe.Pointer(ole.SysAllocStringLen(value.(string)))))), nil
-	case []string:
-		if len(cast) == 0 {
-			return ole.NewVariant(ole.VT_NULL, 0), nil
-		}
-		return CreateStringArrayVariant(cast)
-
-	case time.Time:
-		return convertTimeToDataTime(&cast), nil
-	case *time.Time:
-		return convertTimeToDataTime(cast), nil
-	case nil:
-		return ole.NewVariant(ole.VT_NULL, 0), nil
-	case *ole.IUnknown:
-		if cast == nil {
-			return ole.NewVariant(ole.VT_NULL, 0), nil
-		}
-		return ole.NewVariant(ole.VT_UNKNOWN, int64(uintptr(unsafe.Pointer(&(value.(*ole.IUnknown).RawVTable))))), nil
-	case *wmi.Instance:
-		if cast == nil {
-			return ole.NewVariant(ole.VT_NULL, 0), nil
-		}
-		return ole.NewVariant(ole.VT_UNKNOWN, int64(uintptr(unsafe.Pointer(&(extractClassObj(value.(*wmi.Instance)).RawVTable))))), nil
-	default:
-		return ole.VARIANT{}, fmt.Errorf("unsupported type for automation variants %T", value)
+// EndEnumeration completes iterating a property list on this instance. This is an advanced method.
+// In most cases, the GetAsXXX() methods, GetAll(), and GetAllProperties() methods
+// should be preferred.
+func (i *Instance) EndEnumeration() error {
+	res, _, _ := syscall.SyscallN(
+		i.vTable.EndEnumeration,           // IWbemClassObject::EndEnumeration(
+		uintptr(unsafe.Pointer(i.object))) // IWbemClassObject ptr)
+	if res != 0 {
+		return ole.NewError(res)
 	}
+
+	return nil
 }
 
-func convertTimeToDataTime(time *time.Time) ole.VARIANT {
-	if time == nil || !time.After(WindowsEpoch) {
-		return ole.NewVariant(ole.VT_NULL, 0)
-	}
-	_, offset := time.Zone()
-	// convert to minutes
-	offset /= 60
-	//yyyymmddHHMMSS.mmmmmmsUUU
-	s := fmt.Sprintf("%s%+04d", time.Format("20060102150405.000000"), offset)
-	return ole.NewVariant(ole.VT_BSTR, int64(uintptr(unsafe.Pointer(ole.SysAllocStringLen(s)))))
-}
-
-func convertDataTimeToTime(variant *ole.VARIANT) (time.Time, error) {
-	var zeroTime = time.Time{}
-	var dateTime string
-
-	switch variant.VT {
-	case ole.VT_BSTR:
-		dateTime = variant.ToString()
-	case ole.VT_NULL:
-		return zeroTime, nil
-	default:
-		return zeroTime, errors.New("Variant not compatible with dateTime field")
+// BeginInvoke invokes a method on this Instance. Returns a MethodExecutor builder object
+// that is used to construct the input parameters (via calls to In()), perform the
+// invocation (using calls to Execute()), retrieve output parameters (via calls to
+// Out()), and finally the method return value (using a call to End())
+func (i *Instance) BeginInvoke(method string) *MethodExecutor {
+	objPath, err := i.Path()
+	if err != nil {
+		return &MethodExecutor{err: err}
 	}
 
-	dLen := len(dateTime)
-	if dLen < 5 {
-		return zeroTime, errors.New("Invalid datetime string")
+	var class, inParam *Instance
+	if class, err = i.service.GetClassInstance(i); err == nil {
+		inParam, err = class.GetMethodParameters(method)
+		class.Close()
 	}
 
-	if strings.HasPrefix(dateTime, "00000000000000") {
-		// Zero time
-		return zeroTime, nil
-	}
-
-	zoneStart := dLen - 4
-	var zoneMinutes int64
-	var err error
-	if dateTime[zoneStart] == ':' {
-		// interval ends in :000 since not TZ based
-		zoneMinutes = 0
-	} else {
-		zoneSuffix := dateTime[zoneStart:dLen]
-		zoneMinutes, err = strconv.ParseInt(zoneSuffix, 10, 0)
-		if err != nil {
-			return zeroTime, errors.New("Invalid datetime string, zone did not parse")
-		}
-	}
-
-	timePortion := dateTime[0:zoneStart]
-	timePortion = fmt.Sprintf("%s%+03d%02d", timePortion, zoneMinutes/60, abs(int(zoneMinutes%60)))
-	return time.Parse("20060102150405.000000-0700", timePortion)
-}
-
-func abs(num int) int {
-	if num < 0 {
-		return -num
-	}
-
-	return num
+	return &MethodExecutor{method: method, path: objPath, service: i.service, inParam: inParam, err: err}
 }

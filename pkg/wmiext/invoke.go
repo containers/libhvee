@@ -6,55 +6,63 @@ package wmiext
 import (
 	"reflect"
 
-	"github.com/drtimf/wmi"
+	"github.com/go-ole/go-ole"
 )
 
 type MethodExecutor struct {
 	err      error
 	path     string
 	method   string
-	service  *wmi.Service
-	inParam  *wmi.Instance
-	outParam *wmi.Instance
+	service  *Service
+	inParam  *Instance
+	outParam *Instance
 }
 
-func (e *MethodExecutor) Set(name string, value interface{}) *MethodExecutor {
+// In sets an input parameter for the method of this invocation, converting appropriately
+func (e *MethodExecutor) In(name string, value interface{}) *MethodExecutor {
 	if e.err == nil && e.inParam != nil {
 		switch t := value.(type) {
-		case *wmi.Instance:
+		case *Instance:
 			var ref bool
-			if ref, e.err = IsReferenceProperty(e.inParam, name); e.err != nil {
+			if ref, e.err = e.inParam.IsReferenceProperty(name); e.err != nil {
 				return e
 			}
 			if !ref {
 				// Embedded Object
 				break
 			}
-			if value, e.err = ConvertToPath(t); e.err != nil {
+			if value, e.err = t.Path(); e.err != nil {
 				return e
 			}
 		}
 
-		e.err = InstancePut(e.inParam, name, value)
+		e.err = e.inParam.Put(name, value)
 	}
 
 	return e
 }
 
-func (e *MethodExecutor) Get(name string, value interface{}) *MethodExecutor {
+// Out sets the specified output parameter, and assigns the value parameter to the result.
+// The value parameter must be a reference to the field that should be set.
+func (e *MethodExecutor) Out(name string, value interface{}) *MethodExecutor {
 	if e.err == nil && e.outParam != nil {
+		var variant *ole.VARIANT
+		var cimType CIMTYPE_ENUMERATION
 		var result interface{}
-		var cimType wmi.CIMTYPE_ENUMERATION
-		result, cimType, _, e.err = e.outParam.Get(name)
-		if e.err != nil || result == nil {
+		variant, cimType, _, e.err = e.outParam.GetAsVariant(name)
+		defer variant.Clear()
+		if e.err != nil || variant == nil {
 			return e
 		}
-		if _, ok := value.(**wmi.Instance); ok && cimType == wmi.CIM_REFERENCE {
-			path, ok := result.(string)
-			if !ok {
+		if _, ok := value.(**Instance); ok && cimType == CIM_REFERENCE {
+			path := variant.ToString()
+			result, e.err = e.service.GetObject(path)
+			if e.err != nil {
 				return e
 			}
-			result, e.err = e.service.GetObject(path)
+		} else {
+			target := reflect.ValueOf(value).Elem()
+			result, e.err = convertToGoType(variant, target, target.Type())
 			if e.err != nil {
 				return e
 			}
@@ -65,6 +73,7 @@ func (e *MethodExecutor) Get(name string, value interface{}) *MethodExecutor {
 	return e
 }
 
+// Execute executes the method after in parameters have been specified using In()
 func (e *MethodExecutor) Execute() *MethodExecutor {
 	defer e.cleanupInputs()
 
@@ -82,6 +91,8 @@ func (e *MethodExecutor) cleanupInputs() {
 	}
 }
 
+// End completes the method invocation and returns an error indicating the return
+// code of the underlying method
 func (e *MethodExecutor) End() error {
 	e.cleanupInputs()
 
@@ -93,21 +104,8 @@ func (e *MethodExecutor) End() error {
 	return e.err
 }
 
+// Obtains the last error that occurred while building the invocation. Once
+// an error has occurred, all future operations are treated as a no-op.
 func (e *MethodExecutor) Error() error {
 	return e.err
-}
-
-func BeginInvoke(service *wmi.Service, obj *wmi.Instance, method string) *MethodExecutor {
-	objPath, err := ConvertToPath(obj)
-	if err != nil {
-		return &MethodExecutor{err: err}
-	}
-
-	var class, inParam *wmi.Instance
-	if class, err = GetClassInstance(service, obj); err == nil {
-		inParam, err = class.GetMethodParameters(method)
-		class.Close()
-	}
-
-	return &MethodExecutor{method: method, path: objPath, service: service, inParam: inParam, err: err}
 }

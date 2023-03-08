@@ -8,20 +8,18 @@ import (
 	"time"
 
 	"github.com/containers/libhvee/pkg/wmiext"
-
-	"github.com/drtimf/wmi"
 )
 
 func main() {
-	var service *wmi.Service
+	var service *wmiext.Service
 	var err error
 
-	if service, err = wmi.NewLocalService("root\\virtualization\\v2"); err != nil {
+	if service, err = wmiext.NewLocalService("root\\virtualization\\v2"); err != nil {
 		panic(err)
 	}
 	defer service.Close()
 
-	item, err := wmiext.SpawnInstance(service, "Msvm_KvpExchangeDataItem")
+	item, err := service.SpawnInstance("Msvm_KvpExchangeDataItem")
 	if err != nil {
 		panic(err)
 	}
@@ -31,10 +29,10 @@ func main() {
 	_ = item.Put("Data", "jval-"+fmt.Sprintf("%d", time.Now().Unix()))
 	_ = item.Put("Source", 0)
 
-	itemStr := wmiext.GetCimText(item)
+	itemStr := item.GetCimText()
 	fmt.Println(itemStr)
 
-	vmms, err := wmiext.GetSingletonInstance(service, "Msvm_VirtualSystemManagementService")
+	vmms, err := service.GetSingletonInstance("Msvm_VirtualSystemManagementService")
 	defer vmms.Close()
 	if err != nil {
 		panic(err)
@@ -42,24 +40,24 @@ func main() {
 
 	const wql = "Select * From Msvm_ComputerSystem Where ElementName='%s'"
 
-	computerSystem, err := wmiext.FindFirstInstance(service, fmt.Sprintf(wql, "New Virtual Machine"))
+	computerSystem, err := service.FindFirstInstance(fmt.Sprintf(wql, "New Virtual Machine"))
 	if err != nil {
 		panic(err)
 	}
 	defer computerSystem.Close()
 
-	var job *wmi.Instance
+	var job *wmiext.Instance
 
-	e := wmiext.BeginInvoke(service, vmms, "AddKvpItems").
-		Set("TargetSystem", computerSystem).
-		Set("DataItems", []string{itemStr}).
+	e := vmms.BeginInvoke("AddKvpItems").
+		In("TargetSystem", computerSystem).
+		In("DataItems", []string{itemStr}).
 		Execute()
 
 	fmt.Printf("pre-get %v\n", e)
 
 	fmt.Printf("Pointer -> %d", &job)
 
-	e.Get("Job", &job)
+	e.Out("Job", &job)
 
 	_ = e.End()
 	if err != nil {
@@ -67,13 +65,13 @@ func main() {
 	}
 
 	for {
-		status, _, _, err := job.Get("JobState")
+		status, _, _, err := job.GetAsAny("JobState")
 		if err != nil {
 			panic(err)
 		}
 		fmt.Printf("%v\n", status)
 		time.Sleep(100 * time.Millisecond)
-		job, _ = wmiext.RefetchObject(service, job)
+		job, _ = service.RefetchObject(job)
 		if status.(int32) == 7 {
 			break
 		}
