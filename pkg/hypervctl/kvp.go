@@ -52,10 +52,10 @@ func (k *KvpError) Error() string {
 	return fmt.Sprintf("%s (%d)", k.message, k.ErrorCode)
 }
 
-func createKvpItem(service *wmiext.Service, key string, value string) string {
+func createKvpItem(service *wmiext.Service, key string, value string) (string, error) {
 	item, err := service.SpawnInstance(KvpExchangeDataItemName)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	defer item.Close()
 
@@ -63,7 +63,7 @@ func createKvpItem(service *wmiext.Service, key string, value string) string {
 	_ = item.Put("Data", value)
 	_ = item.Put("Source", 0)
 	itemStr := item.GetCimText()
-	return itemStr
+	return itemStr, nil
 }
 
 func parseKvpMapXml(kvpXml string) (map[string]string, error) {

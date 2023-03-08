@@ -16,6 +16,11 @@ import (
 	"github.com/go-ole/go-ole"
 )
 
+var (
+	unixEpoch = time.Unix(0,0)
+	zeroTime = time.Time{}
+)
+
 // Automation variants do not follow the OLE rules, instead they use the following mapping:
 // sint8	VT_I2	Signed 8-bit integer.
 // sint16	VT_I2	Signed 16-bit integer.
@@ -150,6 +155,8 @@ func convertToGoType(variant *ole.VARIANT, outputValue reflect.Value, outputType
 	case *time.Time:
 		x, err := convertDataTimeToTime(variant)
 		return &x, err
+	case time.Duration:
+		return convertIntervalToDuration(variant)
 	case uint, uint8, uint16, uint32, uint64, int, int8, int16, int32, int64:
 		return convertVariantToInt(variant, outputType)
 	case float32, float64:
@@ -337,17 +344,22 @@ func convertTimeToDataTime(time *time.Time) ole.VARIANT {
 	return ole.NewVariant(ole.VT_BSTR, int64(uintptr(unsafe.Pointer(ole.SysAllocStringLen(s)))))
 }
 
-func convertDataTimeToTime(variant *ole.VARIANT) (time.Time, error) {
-	var zeroTime = time.Time{}
-	var dateTime string
-
+func extractDateTimeString(variant *ole.VARIANT) (string, error) {
 	switch variant.VT {
 	case ole.VT_BSTR:
-		dateTime = variant.ToString()
+		return variant.ToString(), nil
 	case ole.VT_NULL:
-		return zeroTime, nil
+		return "", nil
 	default:
-		return zeroTime, errors.New("variant not compatible with dateTime field")
+		return "", errors.New("variant not compatible with dateTime field")
+	}
+}
+
+func convertDataTimeToTime(variant *ole.VARIANT) (time.Time, error) {
+	var err error
+	dateTime, err := extractDateTimeString(variant)
+	if err != nil || len(dateTime) == 0 {
+		return zeroTime, err
 	}
 
 	dLen := len(dateTime)
@@ -355,29 +367,77 @@ func convertDataTimeToTime(variant *ole.VARIANT) (time.Time, error) {
 		return zeroTime, errors.New("invalid datetime string")
 	}
 
-	if strings.HasPrefix(dateTime, "00000000000000") {
+	if strings.HasPrefix(dateTime, "00000000000000.000000") {
 		// Zero time
 		return zeroTime, nil
 	}
 
 	zoneStart := dLen - 4
+	timePortion := dateTime[0:zoneStart]
+
 	var zoneMinutes int64
-	var err error
 	if dateTime[zoneStart] == ':' {
-		// interval ends in :000 since not TZ based
-		zoneMinutes = 0
-	} else {
-		zoneSuffix := dateTime[zoneStart:dLen]
-		zoneMinutes, err = strconv.ParseInt(zoneSuffix, 10, 0)
-		if err != nil {
-			return zeroTime, errors.New("invalid datetime string, zone did not parse")
-		}
+		// interval ends in :000
+		return parseIntervalTime(dateTime)
 	}
 
-	timePortion := dateTime[0:zoneStart]
+	zoneSuffix := dateTime[zoneStart:dLen]
+	zoneMinutes, err = strconv.ParseInt(zoneSuffix, 10, 0)
+	if err != nil {
+		return zeroTime, errors.New("invalid datetime string, zone did not parse")
+	}
+
 	timePortion = fmt.Sprintf("%s%+03d%02d", timePortion, zoneMinutes/60, abs(int(zoneMinutes%60)))
 	return time.Parse("20060102150405.000000-0700", timePortion)
 }
+
+// parseIntervalTime encodes an interval time as an offset to Unix time
+// allowing a duration to be computed without precision loss
+func parseIntervalTime(interval string) (time.Time, error) {
+	if len(interval) < 25 || interval[21:22] != ":" {
+		return time.Time{}, fmt.Errorf("invalid interval time: %s", interval)
+	}
+
+	days, err := parseUintChain(interval[0:8], nil)
+    hours, err := parseUintChain(interval[8:10], err)
+	mins, err := parseUintChain(interval[10:12], err)
+	secs, err := parseUintChain(interval[12:14], err)
+	micros, err := parseUintChain(interval[15:21], err)
+
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	var stamp uint64 = secs
+	stamp += days * 86400
+	stamp += hours * 3600
+	stamp += mins * 60
+
+    return time.Unix(int64(stamp), int64(micros * 1000)), nil
+}
+
+func convertIntervalToDuration(variant *ole.VARIANT) (time.Duration, error) {
+	var err error
+	interval, err := extractDateTimeString(variant)
+	if err != nil || len(interval) == 0 {
+		return 0, err
+	}
+
+	t, err := parseIntervalTime(interval)
+	if err != nil {
+		return 0, nil
+	}
+
+	return t.Sub(unixEpoch), nil
+}
+
+func parseUintChain(str string, err error) (uint64, error) {
+	if err != nil {
+		return 0, err
+	}
+	return strconv.ParseUint(str, 10, 0)
+}
+
 
 func abs(num int) int {
 	if num < 0 {

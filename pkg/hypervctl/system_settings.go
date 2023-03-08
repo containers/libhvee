@@ -28,7 +28,7 @@ type SystemSettings struct {
 	SwapFileDataRoot                     string
 	LogDataRoot                          string
 	AutomaticStartupAction               uint16 // non-zero
-	AutomaticStartupActionDelay          time.Time
+	AutomaticStartupActionDelay          time.Duration
 	AutomaticStartupActionSequenceNumber uint16
 	AutomaticShutdownAction              uint16 // non-zero
 	AutomaticRecoveryAction              uint16 // non-zero
@@ -64,7 +64,7 @@ type SystemSettings struct {
 	GuestStateDataRoot                   string
 	LockOnDisconnect                     bool
 	ParentPackage                        string
-	AutomaticCriticalErrorActionTimeout  time.Time
+	AutomaticCriticalErrorActionTimeout  time.Duration
 	AutomaticCriticalErrorAction         uint16
 	ConsoleMode                          uint16
 	SecureBootEnabled                    bool

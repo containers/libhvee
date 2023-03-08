@@ -68,6 +68,7 @@ type VirtualMachine struct {
 	LastReplicationTime                      time.Time
 	LastSuccessfulBackupTime                 string
 	EnhancedSessionModeState                 uint16
+	vmm                                      *VirtualMachineManager
 }
 
 func (vm *VirtualMachine) Path() string {
@@ -163,7 +164,10 @@ func (vm *VirtualMachine) kvpOperation(op string, key string, value string, ille
 	}
 	defer vsms.Close()
 
-	itemStr := createKvpItem(service, key, value)
+	itemStr, err := createKvpItem(service, key, value)
+	if err != nil {
+		return err
+	}
 
 	execution := vsms.BeginInvoke(op).
 		In("TargetSystem", vm.Path()).
@@ -335,6 +339,40 @@ func (vm *VirtualMachine) GetConfig() (*HyperVConfig, error) {
 		//State:    state,
 	}
 	return &config, nil
+}
+
+// GetSummaryInformation returns the live VM summary information for this virtual machine.
+// The requestedFields parameter controls which fields of summary information are populated.
+// SummaryRequestCommon and SummaryRequestNearAll provide predefined combinations for this
+// parameter
+func (vm *VirtualMachine) GetSummaryInformation(requestedFields SummaryRequestSet) (*SummaryInformation, error) {
+	service, err := wmiext.NewLocalService(HyperVNamespace)
+	if err != nil {
+		return nil, err
+	}
+	defer service.Close()
+
+	instance, err := service.FindFirstRelatedInstance(vm.Path(), "Msvm_VirtualSystemSettingData")
+	if err != nil {
+		return nil, err
+	}
+	defer instance.Close()
+
+	path, err := instance.Path()
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := vm.vmm.getSummaryInformation(path, requestedFields)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(result) < 1 {
+		return nil, errors.New("summary information search returned an empty result set")
+	}
+
+	return &result[0], nil
 }
 
 // NewVirtualMachine creates a new vm in hyperv
