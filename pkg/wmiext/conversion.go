@@ -121,6 +121,8 @@ func NewAutomationVariant(value interface{}) (ole.VARIANT, error) {
 		return convertTimeToDataTime(&cast), nil
 	case *time.Time:
 		return convertTimeToDataTime(cast), nil
+	case time.Duration:
+		return convertDurationToDateTime(cast), nil
 	case nil:
 		return ole.NewVariant(ole.VT_NULL, 0), nil
 	case *ole.IUnknown:
@@ -341,6 +343,31 @@ func convertTimeToDataTime(time *time.Time) ole.VARIANT {
 	offset /= 60
 	//yyyymmddHHMMSS.mmmmmmsUUU
 	s := fmt.Sprintf("%s%+04d", time.Format("20060102150405.000000"), offset)
+	return ole.NewVariant(ole.VT_BSTR, int64(uintptr(unsafe.Pointer(ole.SysAllocStringLen(s)))))
+}
+
+func convertDurationToDateTime(duration time.Duration) ole.VARIANT  {
+	const daySeconds = time.Second * 86400
+
+	if duration == 0 {
+		return ole.NewVariant(ole.VT_NULL, 0)
+	}
+
+	days := duration / daySeconds
+	duration = duration % daySeconds
+
+	hours := duration / time.Hour
+	duration = duration % time.Hour
+
+	mins := duration / time.Minute
+	duration = duration % time.Minute
+
+	seconds := duration / time.Second
+	duration = duration % time.Second
+
+	micros := duration / time.Microsecond
+
+	s:=fmt.Sprintf("%08d%02d%02d%02d.%06d:000", days, hours, mins, seconds, micros)
 	return ole.NewVariant(ole.VT_BSTR, int64(uintptr(unsafe.Pointer(ole.SysAllocStringLen(s)))))
 }
 
