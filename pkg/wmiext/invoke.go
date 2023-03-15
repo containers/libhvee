@@ -4,6 +4,7 @@
 package wmiext
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/go-ole/go-ole"
@@ -49,6 +50,13 @@ func (e *MethodExecutor) Out(name string, value interface{}) *MethodExecutor {
 		var variant *ole.VARIANT
 		var cimType CIMTYPE_ENUMERATION
 		var result interface{}
+		dest := reflect.ValueOf(value)
+		if dest.Kind() != reflect.Ptr {
+			e.err = fmt.Errorf("Out() on %q called with %T, out parameters must be a reference", name, value)
+			return e
+		}
+		dest = dest.Elem()
+
 		variant, cimType, _, e.err = e.outParam.GetAsVariant(name)
 		defer variant.Clear()
 		if e.err != nil || variant == nil {
@@ -68,7 +76,13 @@ func (e *MethodExecutor) Out(name string, value interface{}) *MethodExecutor {
 			}
 		}
 
-		reflect.ValueOf(value).Elem().Set(reflect.ValueOf(result))
+		newValue := reflect.ValueOf(result)
+		if result == nil {
+			// Nil must be typed to the destination
+			newValue = reflect.Zero(dest.Type())
+		}
+
+		dest.Set(newValue)
 	}
 	return e
 }
