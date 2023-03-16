@@ -77,7 +77,7 @@ func (es EnabledState) String() string {
 }
 
 func (es EnabledState) equal(s uint16) bool {
-	return EnabledState(s) == EnabledState(s)
+	return es == EnabledState(s)
 }
 
 // HyperVConfig describes physical attributes of the machine
@@ -90,14 +90,14 @@ type HyperVConfig struct {
 
 type HardwareConfig struct {
 	// CPUs to be assigned to the VM
-	CPUs uint64
+	CPUs uint16
 	// Diskpath is fully qualified location of the
 	// bootable disk image
 	DiskPath string
 	// Disk size in gigabytes assigned to the vm
 	DiskSize uint64
 	// Memory in megabytes assigned to the vm
-	Memory uint64
+	Memory int32
 }
 
 type Statuses struct {

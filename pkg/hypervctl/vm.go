@@ -281,62 +281,26 @@ func (vm *VirtualMachine) list() ([]*HyperVConfig, error) {
 }
 
 func (vm *VirtualMachine) GetConfig() (*HyperVConfig, error) {
-	var (
-		err error
-		//job *wmi.Instance
-		res int32
-		srv *wmiext.Service
-	)
+	summary, err := vm.GetSummaryInformation(SummaryRequestCommon)
 
-	//summary := SummaryInformation{}
-
-	if srv, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
-		return nil, err
-	}
-	wmiInst, err := srv.FindFirstRelatedInstance(vm.Path(), "Msvm_VirtualSystemSettingData")
 	if err != nil {
 		return nil, err
 	}
-	defer wmiInst.Close()
-
-	path, err := wmiInst.Path()
-	if err != nil {
-		return nil, err
-	}
-
-	imms, err := srv.GetSingletonInstance("Msvm_VirtualSystemManagementService")
-	if err != nil {
-		return nil, err
-	}
-	defer imms.Close()
-	var foo []string
-	err = imms.BeginInvoke("GetSummaryInformation").
-		In("RequestedInformation", []uint32{103}).
-		In("SettingData", []string{path}).
-		Execute().
-		Out("ReturnValue", &res).
-		Out("SummaryInformation", &foo).End()
-	if err != nil {
-		return nil, err
-	}
-	//names, err := wmiInst.
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//fmt.Println(names)
-	//
-	//state := EnabledState(vm.EnabledState)
 
 	config := HyperVConfig{
-		//CPUs:     0,
-		//Created:  time.Time{},
-		//DiskSize: 0,
-		//LastUp:   time.Time{},
-		//Memory:   0,
-		//Running:  state == Enabled,
-		//Starting: state == Quiesce,
-		//State:    state,
+		Hardware: HardwareConfig{
+			CPUs:     summary.NumberOfProcessors,
+			DiskPath: "",
+			DiskSize: 0,
+			Memory:   summary.MemoryAvailable,
+		},
+		Status: Statuses{
+			Created:  vm.InstallDate,
+			LastUp:   time.Time{},
+			Running:  Enabled.equal(vm.EnabledState),
+			Starting: vm.IsStarting(),
+			State:    EnabledState(vm.EnabledState),
+		},
 	}
 	return &config, nil
 }
@@ -399,11 +363,11 @@ func (vmm *VirtualMachineManager) NewVirtualMachine(name string, config *Hardwar
 
 			// The API seems to require both of these even
 			// when not using dynamic memory
-			ms.Limit = config.Memory
-			ms.VirtualQuantity = config.Memory
+			ms.Limit = uint64(config.Memory)
+			ms.VirtualQuantity = uint64(config.Memory)
 		}).
 		PrepareProcessorSettings(func(ps *ProcessorSettings) {
-			ps.VirtualQuantity = config.CPUs // 4 cores
+			ps.VirtualQuantity = uint64(config.CPUs) // 4 cores
 		}).
 		Build()
 	if err != nil {
