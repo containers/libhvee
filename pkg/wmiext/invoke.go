@@ -58,10 +58,10 @@ func (e *MethodExecutor) Out(name string, value interface{}) *MethodExecutor {
 		dest = dest.Elem()
 
 		variant, cimType, _, e.err = e.outParam.GetAsVariant(name)
-		defer variant.Clear()
 		if e.err != nil || variant == nil {
 			return e
 		}
+		defer variant.Clear()
 		if _, ok := value.(**Instance); ok && cimType == CIM_REFERENCE {
 			path := variant.ToString()
 			result, e.err = e.service.GetObject(path)
