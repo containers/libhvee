@@ -15,6 +15,7 @@ import (
 	"github.com/containers/libhvee/pkg/wmiext"
 )
 
+
 // delete this when close to being done
 var (
 	ErrNotImplemented = errors.New("function not implemented")
@@ -206,7 +207,6 @@ func (vm *VirtualMachine) Stop() error {
 	}
 	var (
 		err error
-		job *wmiext.Instance
 		res int32
 		srv *wmiext.Service
 	)
@@ -222,12 +222,16 @@ func (vm *VirtualMachine) Stop() error {
 		In("Reason", "User requested").
 		In("Force", false).
 		Execute().
-		Out("Job", &job).
 		Out("ReturnValue", &res).End()
 	if err != nil {
 		return err
 	}
-	return waitVMResult(res, srv, job)
+
+	if res != 0 {
+		return translateShutdownError(int(res))
+	}
+
+	return nil
 }
 
 func (vm *VirtualMachine) Start() error {
