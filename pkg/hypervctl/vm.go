@@ -15,7 +15,6 @@ import (
 	"github.com/containers/libhvee/pkg/wmiext"
 )
 
-
 // delete this when close to being done
 var (
 	ErrNotImplemented = errors.New("function not implemented")
@@ -284,18 +283,27 @@ func (vm *VirtualMachine) list() ([]*HyperVConfig, error) {
 	return nil, ErrNotImplemented
 }
 
-func (vm *VirtualMachine) GetConfig() (*HyperVConfig, error) {
+func (vm *VirtualMachine) GetConfig(diskPath string) (*HyperVConfig, error) {
+	var (
+		diskSize uint64
+	)
 	summary, err := vm.GetSummaryInformation(SummaryRequestCommon)
-
 	if err != nil {
 		return nil, err
 	}
 
+	// Grabbing actual disk size
+	diskPathInfo, err := os.Stat(diskPath)
+	if err != nil {
+		return nil, err
+	}
+	diskSize = uint64(diskPathInfo.Size())
+
 	config := HyperVConfig{
 		Hardware: HardwareConfig{
 			CPUs:     summary.NumberOfProcessors,
-			DiskPath: "",
-			DiskSize: 0,
+			DiskPath: diskPath,
+			DiskSize: diskSize,
 			Memory:   summary.MemoryAvailable,
 		},
 		Status: Statuses{
