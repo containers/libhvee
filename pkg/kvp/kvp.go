@@ -73,7 +73,7 @@ next:
 
 		switch hvMsg.kvpHdr.operation {
 		case KvpOpRegister1:
-			continue next
+			continue
 		case KvpOpSet:
 			// on the next two variables, we are cutting the last byte because otherwise
 			// it is padded and key lookups fail
