@@ -2,6 +2,9 @@ package kvp
 
 import (
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 )
 
 var (
@@ -14,21 +17,26 @@ var (
 	// ErrNoKeyValuePairsFound means we were unable to find key-value pairs as passed
 	// from the hyperv host to this guest.
 	ErrNoKeyValuePairsFound = errors.New("unable to find kvp keys")
+	// ErrKeyNotFound means we could not find the key in information read
+	ErrKeyNotFound = errors.New("unable to find key")
 )
 
 const (
 	// Timeout amount of time in ms to poll the hyperv kernel device
 	Timeout                   = 1000
-	KvpOpRegister1            = 100
+	OpRegister1               = 100
 	HvSOk                     = 0
 	HvKvpExchangeMaxValueSize = 2048
 	HvKvpExchangeMaxKeySize   = 512
-	KvpOpSet                  = 1
-	// KvpKernelDevice s the hyperv kernel device used for communicating key-values pairs
+	OpSet                     = 1
+	// KernelDevice s the hyperv kernel device used for communicating key-values pairs
 	// on hyperv between the host and guest
-	KvpKernelDevice = "/dev/vmbus/hv_kvp"
+	KernelDevice = "/dev/vmbus/hv_kvp"
 	// DefaultKVPPoolID is where Windows host write to for Linux VMs
-	DefaultKVPPoolID = 0
+	DefaultKVPPoolID               = 0
+	DefaultKVPBaseName             = ".kvp_pool_"
+	DefaultKVPFilePath             = "/var/lib/hyperv"
+	defaultKVPFileWritePermissions = 644
 )
 
 type hvKvpExchgMsgValue struct {
@@ -66,6 +74,74 @@ type hvKvpMsgRet struct {
 type PoolID uint8
 
 type ValuePair struct {
+	Key   string
 	Value string
-	Pool  PoolID
+}
+
+type ValuePairs []ValuePair
+
+func (vp ValuePairs) getValueByKey(key string) (ValuePair, error) {
+	for _, vp := range vp {
+		if key == vp.Key {
+			return vp, nil
+		}
+	}
+	return ValuePair{}, ErrKeyNotFound
+}
+
+type KeyValuePair map[PoolID]ValuePairs
+
+func (kv KeyValuePair) encodePoolFile(poolID PoolID) (poolFile []byte) {
+	poolEntries, exists := kv[poolID]
+	if !exists {
+		return
+	}
+	for _, entry := range poolEntries {
+		// These have to be padded with nulls
+		emptyKey := makeEmptyFixedArray(HvKvpExchangeMaxKeySize)
+		emptyVal := makeEmptyFixedArray(HvKvpExchangeMaxValueSize)
+		_ = copy(emptyKey, entry.Key)
+		_ = copy(emptyVal, entry.Value)
+		poolFile = append(poolFile, emptyKey...)
+		poolFile = append(poolFile, emptyVal...)
+	}
+	return
+}
+
+func (kv KeyValuePair) append(poolID PoolID, key, value string) {
+	vps, exists := kv[poolID]
+	vp := ValuePair{
+		Key:   key,
+		Value: value,
+	}
+	if !exists {
+		kv[poolID] = ValuePairs{vp}
+		return
+	}
+	kv[poolID] = append(vps, vp)
+}
+
+func (kv KeyValuePair) WriteToFS(path string) error {
+	if err := os.MkdirAll(path, 777); err != nil {
+		return err
+	}
+	for poolID := range kv {
+		fqWritePath := filepath.Join(path, fmt.Sprintf("%s%d", DefaultKVPBaseName, poolID))
+		fmt.Println(fqWritePath)
+		_, err := os.Stat(fqWritePath)
+		if os.IsExist(err) {
+			return errors.New("%s already exists and will not be overwritten")
+		}
+		if len(kv[poolID]) < 1 {
+			// need to set permissions so ...
+			if err := os.WriteFile(fqWritePath, []byte{}, defaultKVPFileWritePermissions); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := os.WriteFile(fqWritePath, kv.encodePoolFile(poolID), defaultKVPFileWritePermissions); err != nil {
+			return err
+		}
+	}
+	return nil
 }
