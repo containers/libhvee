@@ -98,8 +98,8 @@ func (kv KeyValuePair) encodePoolFile(poolID PoolID) (poolFile []byte) {
 	}
 	for _, entry := range poolEntries {
 		// These have to be padded with nulls
-		emptyKey := makeEmptyFixedArray(HvKvpExchangeMaxKeySize)
-		emptyVal := makeEmptyFixedArray(HvKvpExchangeMaxValueSize)
+		emptyKey := make([]byte, HvKvpExchangeMaxKeySize)
+		emptyVal := make([]byte, HvKvpExchangeMaxValueSize)
 		_ = copy(emptyKey, entry.Key)
 		_ = copy(emptyVal, entry.Value)
 		poolFile = append(poolFile, emptyKey...)
@@ -127,10 +127,11 @@ func (kv KeyValuePair) WriteToFS(path string) error {
 	}
 	for poolID := range kv {
 		fqWritePath := filepath.Join(path, fmt.Sprintf("%s%d", DefaultKVPBaseName, poolID))
-		fmt.Println(fqWritePath)
-		_, err := os.Stat(fqWritePath)
-		if os.IsExist(err) {
-			return errors.New("%s already exists and will not be overwritten")
+		if _, err := os.Stat(fqWritePath); err != nil {
+			if os.IsExist(err) {
+				return errors.New("%s already exists and will not be overwritten")
+			}
+			return err
 		}
 		if len(kv[poolID]) < 1 {
 			// need to set permissions so ...
