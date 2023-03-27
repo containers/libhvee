@@ -138,11 +138,3 @@ func (kv KeyValuePair) GetSplitKeyValues(key string, pool PoolID) (string, KeyVa
 	}
 	return strings.Join(parts, ""), leftOvers, nil
 }
-
-func makeEmptyFixedArray(len uint) []byte {
-	e := make([]byte, len)
-	for i := range e {
-		e[i] = 0x00
-	}
-	return e
-}
