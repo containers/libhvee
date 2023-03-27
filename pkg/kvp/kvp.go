@@ -3,7 +3,6 @@
 package kvp
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"unsafe"
@@ -13,9 +12,13 @@ import (
 
 // readKvpData reads all key-value pairs from the hyperv kernel device and creates
 // a map representation of them
-func readKvpData() (map[string]ValuePair, error) {
-	ret := map[string]ValuePair{}
-	kvp, err := unix.Open(KvpKernelDevice, unix.O_RDWR|unix.O_CLOEXEC, 0)
+func readKvpData() (KeyValuePair, error) {
+	ret := make(KeyValuePair)
+	for i := 0; i < 5; i++ {
+		// We need to seed the poolids
+		ret[PoolID(i)] = ValuePairs{}
+	}
+	kvp, err := unix.Open(KernelDevice, unix.O_RDWR|unix.O_CLOEXEC|unix.O_NONBLOCK, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -29,17 +32,17 @@ func readKvpData() (map[string]ValuePair, error) {
 	const sizeOf = int(unsafe.Sizeof(hvMsg))
 
 	var (
-		asByteSlice    []byte = (*(*[sizeOf]byte)(unsafe.Pointer(&hvMsg)))[:]
-		retAsByteSlice []byte = (*(*[sizeOf]byte)(unsafe.Pointer(&hvMsgRet)))[:]
+		asByteSlice    = (*(*[sizeOf]byte)(unsafe.Pointer(&hvMsg)))[:]
+		retAsByteSlice = (*(*[sizeOf]byte)(unsafe.Pointer(&hvMsgRet)))[:]
 	)
 
-	hvMsg.kvpHdr.operation = KvpOpRegister1
+	hvMsg.kvpHdr.operation = OpRegister1
 
 	l, err := unix.Write(kvp, asByteSlice)
 	if err != nil {
 		return nil, err
 	}
-	if l != int(sizeOf) {
+	if l != sizeOf {
 		return nil, ErrUnableToWriteToKVP
 	}
 
@@ -64,25 +67,27 @@ next:
 		}
 
 		l, err := unix.Read(kvp, asByteSlice)
+		if err != nil {
+			if err == unix.EAGAIN || err == unix.EWOULDBLOCK {
+				continue
+			}
+			return nil, err
+		}
 		if l != sizeOf {
 			return nil, ErrUnableToReadFromKVP
 		}
-		if err != nil {
-			return nil, err
-		}
 
 		switch hvMsg.kvpHdr.operation {
-		case KvpOpRegister1:
-			continue
-		case KvpOpSet:
+		case OpRegister1:
+			continue next
+		case OpSet:
 			// on the next two variables, we are cutting the last byte because otherwise
 			// it is padded and key lookups fail
-			key := []byte(hvMsg.kvpSet.data.key[:hvMsg.kvpSet.data.keySize-1])
-			value := []byte(hvMsg.kvpSet.data.value[:hvMsg.kvpSet.data.valueSize-1])
-			ret[string(key)] = ValuePair{
-				Value: string(value),
-				Pool:  PoolID(hvMsg.kvpHdr.pool),
-			}
+			key := hvMsg.kvpSet.data.key[:hvMsg.kvpSet.data.keySize-1]
+			value := hvMsg.kvpSet.data.value[:hvMsg.kvpSet.data.valueSize-1]
+
+			poolID := PoolID(hvMsg.kvpHdr.pool)
+			ret.append(poolID, string(key), string(value))
 		}
 
 		hvMsgRet.error = HvSOk
@@ -91,7 +96,7 @@ next:
 		if err != nil {
 			return nil, err
 		}
-		if l != int(sizeOf) {
+		if l != sizeOf {
 			return nil, ErrUnableToWriteToKVP
 		}
 	}
@@ -100,46 +105,44 @@ next:
 // GetKeyValuePairs reads the key value pairs from the wmi hyperv kernel device
 // and returns them in map form.  the map value is a ValuePair which contains
 // the value string and the poolid
-func GetKeyValuePairs() (map[string]ValuePair, error) {
+func GetKeyValuePairs() (KeyValuePair, error) {
 	return readKvpData()
 }
 
 // GetSplitKeyValues "filters" KVPs looking for split values using a key and pool_id.  Returns the assembled
 // split values as a key as well as a new KVP that no longer has the split keys in question
-func GetSplitKeyValues(key string, pool PoolID, kvps map[string]ValuePair) (string, map[string]ValuePair, error) {
-	if len(kvps) < 1 {
-		return "", kvps, ErrNoKeyValuePairsFound
-	}
-
+func (kv KeyValuePair) GetSplitKeyValues(key string, pool PoolID) (string, KeyValuePair, error) {
 	var (
 		parts     []string
 		counter   = 0
-		leftOvers map[string]ValuePair
+		leftOvers KeyValuePair
 	)
 
-	// Being extra diligent here
-	b, err := json.Marshal(kvps)
-	if err != nil {
-		return "", nil, err
-	}
-	if err := json.Unmarshal(b, &leftOvers); err != nil {
-		return "", nil, err
-	}
 	for {
 		wantKey := fmt.Sprintf("%s%d", key, counter)
-		val, exists := leftOvers[wantKey]
+		entries, exists := kv[pool]
 		if !exists {
+			// No entries for the pool
 			break
 		}
-		if exists && val.Pool == pool {
-			parts = append(parts, val.Value)
-			// Pop key/value from map
-			delete(leftOvers, wantKey)
+		entry, err := entries.getValueByKey(wantKey)
+		leftOvers[pool] = append(leftOvers[pool], entry)
+		if err != nil {
+			return "", nil, err
 		}
+		parts = append(parts, entry.Value)
 		counter++
 	}
 	if len(parts) < 1 {
-		return "", kvps, ErrNoKeyValuePairsFound
+		return "", nil, ErrNoKeyValuePairsFound
 	}
 	return strings.Join(parts, ""), leftOvers, nil
+}
+
+func makeEmptyFixedArray(len uint) []byte {
+	e := make([]byte, len)
+	for i := range e {
+		e[i] = 0x00
+	}
+	return e
 }
