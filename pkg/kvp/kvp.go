@@ -3,6 +3,7 @@
 package kvp
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"unsafe"
@@ -113,10 +114,11 @@ func GetKeyValuePairs() (KeyValuePair, error) {
 // split values as a key as well as a new KVP that no longer has the split keys in question
 func (kv KeyValuePair) GetSplitKeyValues(key string, pool PoolID) (string, KeyValuePair, error) {
 	var (
-		parts     []string
-		counter   = 0
-		leftOvers KeyValuePair
+		parts   []string
+		counter = 0
 	)
+
+	leftOvers := make(KeyValuePair)
 
 	for {
 		wantKey := fmt.Sprintf("%s%d", key, counter)
@@ -128,6 +130,10 @@ func (kv KeyValuePair) GetSplitKeyValues(key string, pool PoolID) (string, KeyVa
 		entry, err := entries.getValueByKey(wantKey)
 		leftOvers[pool] = append(leftOvers[pool], entry)
 		if err != nil {
+			if errors.Is(err, ErrKeyNotFound) {
+				break
+			}
+
 			return "", nil, err
 		}
 		parts = append(parts, entry.Value)
