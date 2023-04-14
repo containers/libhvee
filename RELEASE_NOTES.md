@@ -1,6 +1,9 @@
 
 # Release Notes
 
+## v0.0.4
+* Add bool for network creation when creating a vm
+
 ## v0.0.3
 * Fix bug in processing key value pairs in Linux
 
