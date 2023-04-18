@@ -36,7 +36,7 @@ const (
 	DefaultKVPPoolID               = 0
 	DefaultKVPBaseName             = ".kvp_pool_"
 	DefaultKVPFilePath             = "/var/lib/hyperv"
-	defaultKVPFileWritePermissions = 644
+	DefaultKVPFileWritePermissions = 644
 )
 
 type hvKvpExchgMsgValue struct {
@@ -91,7 +91,7 @@ func (vp ValuePairs) getValueByKey(key string) (ValuePair, error) {
 
 type KeyValuePair map[PoolID]ValuePairs
 
-func (kv KeyValuePair) encodePoolFile(poolID PoolID) (poolFile []byte) {
+func (kv KeyValuePair) EncodePoolFile(poolID PoolID) (poolFile []byte) {
 	poolEntries, exists := kv[poolID]
 	if !exists {
 		return
@@ -135,12 +135,12 @@ func (kv KeyValuePair) WriteToFS(path string) error {
 		}
 		if len(kv[poolID]) < 1 {
 			// need to set permissions so ...
-			if err := os.WriteFile(fqWritePath, []byte{}, defaultKVPFileWritePermissions); err != nil {
+			if err := os.WriteFile(fqWritePath, []byte{}, DefaultKVPFileWritePermissions); err != nil {
 				return err
 			}
 			continue
 		}
-		if err := os.WriteFile(fqWritePath, kv.encodePoolFile(poolID), defaultKVPFileWritePermissions); err != nil {
+		if err := os.WriteFile(fqWritePath, kv.EncodePoolFile(poolID), DefaultKVPFileWritePermissions); err != nil {
 			return err
 		}
 	}
