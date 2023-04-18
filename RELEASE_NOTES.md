@@ -1,6 +1,10 @@
 
 # Release Notes
 
+## v0.0.5
+* Exported const and func for Ignition project
+* Wait on VM to actually stop before returning
+
 ## v0.0.4
 * Add bool for network creation when creating a vm
 
