@@ -1,6 +1,10 @@
 
 # Release Notes
 
+## 0.1
+* Pruned unnecessary content
+* Added sub-command `add-ign` to kvpctl
+
 ## v0.0.5
 * Exported const and func for Ignition project
 * Wait on VM to actually stop before returning
