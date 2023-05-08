@@ -1,31 +1,78 @@
 //go:build windows
-// +build windows
 
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"unicode"
 
 	"github.com/containers/libhvee/pkg/hypervctl"
+	"github.com/containers/libhvee/pkg/kvp/ginsu"
 	"golang.org/x/sys/windows"
 )
 
+type kvpcmd string
+
+const (
+	add     kvpcmd = "add"
+	addIgn  kvpcmd = "add-ign"
+	clear   kvpcmd = "clear"
+	edit    kvpcmd = "edit"
+	get     kvpcmd = "get"
+	put     kvpcmd = "put"
+	rm      kvpcmd = "rm"
+	unknown kvpcmd = ""
+)
+
+func getSubCommand(cmd string) kvpcmd {
+	switch cmd {
+	case string(add):
+		return add
+	case string(addIgn):
+		return addIgn
+	case string(edit):
+		return edit
+	case string(get):
+		return get
+	case string(put):
+		return put
+	case string(rm):
+		return rm
+	case string(clear):
+		return clear
+	}
+	return unknown
+}
+
+func printHelp() {
+	fmt.Printf("Usage: %s <vm name> (get|add|add-ign|rm|edit|put|clear) [<key>] [<value>]\n\n", os.Args[0])
+	fmt.Printf("\tget   = get all keys or a specific key\n")
+	fmt.Printf("\tadd   = create a key if it doesn't exist\n")
+	fmt.Printf("\tadd-ign   = split and add key value pairs for an Ignition file\n")
+	fmt.Printf("\tedit  = change a key that exists\n")
+	fmt.Printf("\tput   = create or edit a key\n")
+	fmt.Printf("\trm    = delete one or more keys\n")
+	fmt.Printf("\tclear = delete everything\n\n")
+	os.Exit(1)
+}
+
 func main() {
-	var err error
+	lenArgs := len(os.Args[1:])
+	if lenArgs < 2 {
+		fmt.Printf("error: virtual machine name or command not provided\n")
+		printHelp()
+	}
 
+	subCmd := getSubCommand(os.Args[2])
+	if subCmd == unknown {
+		fmt.Printf("error: unknown command %s\n", os.Args[2])
+		printHelp()
+	}
 	vmms := hypervctl.VirtualMachineManager{}
-
 	if len(os.Args) < 3 {
-		fmt.Printf("Usage: %s <vm name> (get|add|rm|edit|put|clear) [<key>] [<value>]\n\n", os.Args[0])
-		fmt.Printf("\tget   = get all keys or a specific key\n")
-		fmt.Printf("\tadd   = create a key if it doesn't exist\n")
-		fmt.Printf("\tedit  = change a key that exists\n")
-		fmt.Printf("\tput   = create or edit a key\n")
-		fmt.Printf("\trm    = delete key\n")
-		fmt.Printf("\tclear = delete everything\n\n")
 
 		return
 	}
@@ -35,30 +82,36 @@ func main() {
 		fmt.Printf("Find machine failed: %s\n", err.Error())
 		os.Exit(1)
 	}
+	verifyArgs(kvpcmd(os.Args[2]), len(os.Args[1:]))
 
-	switch os.Args[2] {
-	case "add":
-		verifyArgs("add", true)
+	switch subCmd {
+	case add:
 		err = vm.AddKeyValuePair(os.Args[3], os.Args[4])
-	case "rm":
-		verifyArgs("rm", false)
-		err = vm.RemoveKeyValuePair(os.Args[3])
-	case "edit":
-		verifyArgs("edit", false)
+	case rm:
+		for _, key := range os.Args[3:] {
+			if err := vm.RemoveKeyValuePair(key); err != nil {
+				exitOnError(err)
+			}
+		}
+	case edit:
 		err = vm.ModifyKeyValuePair(os.Args[3], os.Args[4])
-	case "put":
-		verifyArgs("put", false)
+	case put:
 		err = vm.PutKeyValuePair(os.Args[3], os.Args[4])
-	case "get":
+	case get:
 		err = getOperation(vm)
-	case "clear":
+	case clear:
 		err = clearOperation(vm)
+	case addIgn:
+		err = addIgnFile(vm, os.Args[3], os.Args[4])
 
 	default:
-		fmt.Printf("Operation must be get, add, rm, edit, clear, or put\n")
+		fmt.Printf("Operation must be get, add, add-ign, rm, edit, clear, or put\n")
 		os.Exit(1)
 	}
+	exitOnError(err)
+}
 
+func exitOnError(err error) {
 	if err != nil {
 		fmt.Printf("KVP failed: %s\n", err.Error())
 		os.Exit(1)
@@ -139,17 +192,40 @@ loop:
 	return nil
 }
 
-func verifyArgs(operation string, value bool) {
-	check := 4
-	suffix := ""
-
-	if value {
-		check++
-		suffix = " <value>"
+func verifyArgs(op kvpcmd, lenArgs int) {
+	switch op {
+	case add, put, edit, addIgn:
+		if lenArgs < 4 || lenArgs > 4 {
+			printHelp()
+		}
+	case rm:
+		// nothing
+	case clear:
+		if lenArgs > 2 {
+			printHelp()
+		}
+	case get:
+		if lenArgs > 4 || lenArgs < 2 || lenArgs == 3 {
+			printHelp()
+		}
 	}
+}
 
-	if len(os.Args) < check {
-		fmt.Printf("Usage: %s <vm name> %s <key>%s", os.Args[0], operation, suffix)
-		os.Exit(1)
+func addIgnFile(vm *hypervctl.VirtualMachine, inputFilename, keyName string) error {
+	b, err := os.ReadFile(inputFilename)
+	if err != nil {
+		return err
 	}
+	parts, err := ginsu.Dice(bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+	for i, v := range parts {
+		key := fmt.Sprintf("%s%d", keyName, i)
+		if err := vm.AddKeyValuePair(key, v); err != nil {
+			return err
+		}
+		fmt.Println("added key: ", key)
+	}
+	return nil
 }
