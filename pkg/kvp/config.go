@@ -36,7 +36,7 @@ const (
 	DefaultKVPPoolID               = 0
 	DefaultKVPBaseName             = ".kvp_pool_"
 	DefaultKVPFilePath             = "/var/lib/hyperv"
-	DefaultKVPFileWritePermissions = 644
+	DefaultKVPFileWritePermissions = 0644
 )
 
 type hvKvpExchgMsgValue struct {
@@ -122,7 +122,7 @@ func (kv KeyValuePair) append(poolID PoolID, key, value string) {
 }
 
 func (kv KeyValuePair) WriteToFS(path string) error {
-	if err := os.MkdirAll(path, 777); err != nil {
+	if err := os.MkdirAll(path, 0755); err != nil {
 		return err
 	}
 	for poolID := range kv {
