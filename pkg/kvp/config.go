@@ -127,12 +127,6 @@ func (kv KeyValuePair) WriteToFS(path string) error {
 	}
 	for poolID := range kv {
 		fqWritePath := filepath.Join(path, fmt.Sprintf("%s%d", DefaultKVPBaseName, poolID))
-		if _, err := os.Stat(fqWritePath); err != nil {
-			if os.IsExist(err) {
-				return errors.New("%s already exists and will not be overwritten")
-			}
-			return err
-		}
 		if len(kv[poolID]) < 1 {
 			// need to set permissions so ...
 			if err := os.WriteFile(fqWritePath, []byte{}, DefaultKVPFileWritePermissions); err != nil {
