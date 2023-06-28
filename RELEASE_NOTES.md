@@ -1,6 +1,9 @@
 
 # Release Notes
 
+## 0.2
+* Tweaks and export functions required for coreos ignition project
+
 ## 0.1
 * Pruned unnecessary content
 * Added sub-command `add-ign` to kvpctl
