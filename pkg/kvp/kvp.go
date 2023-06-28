@@ -56,11 +56,10 @@ next:
 
 		howMany, err := unix.Poll([]unix.PollFd{pfd}, Timeout)
 		if err != nil {
-			if err == unix.EINVAL {
-				return nil, err
-			} else {
+			if err == unix.EINTR {
 				continue
 			}
+			return nil, err
 		}
 
 		if howMany == 0 {
@@ -69,7 +68,7 @@ next:
 
 		l, err := unix.Read(kvp, asByteSlice)
 		if err != nil {
-			if err == unix.EAGAIN || err == unix.EWOULDBLOCK {
+			if err == unix.EAGAIN || err == unix.EINTR || err == unix.EWOULDBLOCK {
 				continue
 			}
 			return nil, err
@@ -89,9 +88,11 @@ next:
 
 			poolID := PoolID(hvMsg.kvpHdr.pool)
 			ret.append(poolID, string(key), string(value))
-		}
 
-		hvMsgRet.error = HvSOk
+			hvMsgRet.error = HvSOk
+		default:
+			hvMsgRet.error = HvEFail
+		}
 
 		l, err = unix.Write(kvp, retAsByteSlice)
 		if err != nil {
@@ -110,15 +111,13 @@ func GetKeyValuePairs() (KeyValuePair, error) {
 	return readKvpData()
 }
 
-// GetSplitKeyValues "filters" KVPs looking for split values using a key and pool_id.  Returns the assembled
-// split values as a key as well as a new KVP that no longer has the split keys in question
-func (kv KeyValuePair) GetSplitKeyValues(key string, pool PoolID) (string, KeyValuePair, error) {
+// GetSplitKeyValues reassembles split KVPs from a key prefix and pool_id and
+// returns the assembled split value.
+func (kv KeyValuePair) GetSplitKeyValues(key string, pool PoolID) (string, error) {
 	var (
 		parts   []string
 		counter = 0
 	)
-
-	leftOvers := make(KeyValuePair)
 
 	for {
 		wantKey := fmt.Sprintf("%s%d", key, counter)
@@ -127,20 +126,19 @@ func (kv KeyValuePair) GetSplitKeyValues(key string, pool PoolID) (string, KeyVa
 			// No entries for the pool
 			break
 		}
-		entry, err := entries.getValueByKey(wantKey)
-		leftOvers[pool] = append(leftOvers[pool], entry)
+		entry, err := entries.GetValueByKey(wantKey)
 		if err != nil {
 			if errors.Is(err, ErrKeyNotFound) {
 				break
 			}
 
-			return "", nil, err
+			return "", err
 		}
 		parts = append(parts, entry.Value)
 		counter++
 	}
 	if len(parts) < 1 {
-		return "", nil, ErrNoKeyValuePairsFound
+		return "", ErrNoKeyValuePairsFound
 	}
-	return strings.Join(parts, ""), leftOvers, nil
+	return strings.Join(parts, ""), nil
 }

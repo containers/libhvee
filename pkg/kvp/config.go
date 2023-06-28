@@ -26,17 +26,18 @@ const (
 	Timeout                   = 1000
 	OpRegister1               = 100
 	HvSOk                     = 0
+	HvEFail                   = 0x80004005
 	HvKvpExchangeMaxValueSize = 2048
 	HvKvpExchangeMaxKeySize   = 512
 	OpSet                     = 1
-	// KernelDevice s the hyperv kernel device used for communicating key-values pairs
+	// KernelDevice is the hyperv kernel device used for communicating key-value pairs
 	// on hyperv between the host and guest
 	KernelDevice = "/dev/vmbus/hv_kvp"
 	// DefaultKVPPoolID is where Windows host write to for Linux VMs
 	DefaultKVPPoolID               = 0
 	DefaultKVPBaseName             = ".kvp_pool_"
 	DefaultKVPFilePath             = "/var/lib/hyperv"
-	DefaultKVPFileWritePermissions = 644
+	DefaultKVPFileWritePermissions = 0644
 )
 
 type hvKvpExchgMsgValue struct {
@@ -80,7 +81,7 @@ type ValuePair struct {
 
 type ValuePairs []ValuePair
 
-func (vp ValuePairs) getValueByKey(key string) (ValuePair, error) {
+func (vp ValuePairs) GetValueByKey(key string) (ValuePair, error) {
 	for _, vp := range vp {
 		if key == vp.Key {
 			return vp, nil
@@ -122,17 +123,11 @@ func (kv KeyValuePair) append(poolID PoolID, key, value string) {
 }
 
 func (kv KeyValuePair) WriteToFS(path string) error {
-	if err := os.MkdirAll(path, 777); err != nil {
+	if err := os.MkdirAll(path, 0755); err != nil {
 		return err
 	}
 	for poolID := range kv {
 		fqWritePath := filepath.Join(path, fmt.Sprintf("%s%d", DefaultKVPBaseName, poolID))
-		if _, err := os.Stat(fqWritePath); err != nil {
-			if os.IsExist(err) {
-				return errors.New("%s already exists and will not be overwritten")
-			}
-			return err
-		}
 		if len(kv[poolID]) < 1 {
 			// need to set permissions so ...
 			if err := os.WriteFile(fqWritePath, []byte{}, DefaultKVPFileWritePermissions); err != nil {
