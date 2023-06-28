@@ -29,7 +29,7 @@ const (
 	HvKvpExchangeMaxValueSize = 2048
 	HvKvpExchangeMaxKeySize   = 512
 	OpSet                     = 1
-	// KernelDevice s the hyperv kernel device used for communicating key-values pairs
+	// KernelDevice is the hyperv kernel device used for communicating key-value pairs
 	// on hyperv between the host and guest
 	KernelDevice = "/dev/vmbus/hv_kvp"
 	// DefaultKVPPoolID is where Windows host write to for Linux VMs
