@@ -110,15 +110,13 @@ func GetKeyValuePairs() (KeyValuePair, error) {
 	return readKvpData()
 }
 
-// GetSplitKeyValues "filters" KVPs looking for split values using a key and pool_id.  Returns the assembled
-// split values as a key as well as a new KVP that no longer has the split keys in question
-func (kv KeyValuePair) GetSplitKeyValues(key string, pool PoolID) (string, KeyValuePair, error) {
+// GetSplitKeyValues reassembles split KVPs from a key prefix and pool_id and
+// returns the assembled split value.
+func (kv KeyValuePair) GetSplitKeyValues(key string, pool PoolID) (string, error) {
 	var (
 		parts   []string
 		counter = 0
 	)
-
-	leftOvers := make(KeyValuePair)
 
 	for {
 		wantKey := fmt.Sprintf("%s%d", key, counter)
@@ -128,19 +126,18 @@ func (kv KeyValuePair) GetSplitKeyValues(key string, pool PoolID) (string, KeyVa
 			break
 		}
 		entry, err := entries.GetValueByKey(wantKey)
-		leftOvers[pool] = append(leftOvers[pool], entry)
 		if err != nil {
 			if errors.Is(err, ErrKeyNotFound) {
 				break
 			}
 
-			return "", nil, err
+			return "", err
 		}
 		parts = append(parts, entry.Value)
 		counter++
 	}
 	if len(parts) < 1 {
-		return "", nil, ErrNoKeyValuePairsFound
+		return "", ErrNoKeyValuePairsFound
 	}
-	return strings.Join(parts, ""), leftOvers, nil
+	return strings.Join(parts, ""), nil
 }
