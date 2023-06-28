@@ -56,11 +56,10 @@ next:
 
 		howMany, err := unix.Poll([]unix.PollFd{pfd}, Timeout)
 		if err != nil {
-			if err == unix.EINVAL {
-				return nil, err
-			} else {
+			if err == unix.EINTR {
 				continue
 			}
+			return nil, err
 		}
 
 		if howMany == 0 {
@@ -69,7 +68,7 @@ next:
 
 		l, err := unix.Read(kvp, asByteSlice)
 		if err != nil {
-			if err == unix.EAGAIN || err == unix.EWOULDBLOCK {
+			if err == unix.EAGAIN || err == unix.EINTR || err == unix.EWOULDBLOCK {
 				continue
 			}
 			return nil, err
