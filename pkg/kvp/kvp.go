@@ -127,7 +127,7 @@ func (kv KeyValuePair) GetSplitKeyValues(key string, pool PoolID) (string, KeyVa
 			// No entries for the pool
 			break
 		}
-		entry, err := entries.getValueByKey(wantKey)
+		entry, err := entries.GetValueByKey(wantKey)
 		leftOvers[pool] = append(leftOvers[pool], entry)
 		if err != nil {
 			if errors.Is(err, ErrKeyNotFound) {

@@ -80,7 +80,7 @@ type ValuePair struct {
 
 type ValuePairs []ValuePair
 
-func (vp ValuePairs) getValueByKey(key string) (ValuePair, error) {
+func (vp ValuePairs) GetValueByKey(key string) (ValuePair, error) {
 	for _, vp := range vp {
 		if key == vp.Key {
 			return vp, nil
