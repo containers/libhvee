@@ -88,9 +88,11 @@ next:
 
 			poolID := PoolID(hvMsg.kvpHdr.pool)
 			ret.append(poolID, string(key), string(value))
-		}
 
-		hvMsgRet.error = HvSOk
+			hvMsgRet.error = HvSOk
+		default:
+			hvMsgRet.error = HvEFail
+		}
 
 		l, err = unix.Write(kvp, retAsByteSlice)
 		if err != nil {

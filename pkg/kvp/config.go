@@ -26,6 +26,7 @@ const (
 	Timeout                   = 1000
 	OpRegister1               = 100
 	HvSOk                     = 0
+	HvEFail                   = 0x80004005
 	HvKvpExchangeMaxValueSize = 2048
 	HvKvpExchangeMaxKeySize   = 512
 	OpSet                     = 1
