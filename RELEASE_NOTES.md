@@ -1,6 +1,9 @@
 
 # Release Notes
 
+## 0.3.0
+* Small change in return type for error code
+
 ## 0.2
 * Tweaks and export functions required for coreos ignition project
 
