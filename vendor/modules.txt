@@ -8,7 +8,7 @@ github.com/go-ole/go-ole
 github.com/sirupsen/logrus
 # github.com/stretchr/testify v1.8.1
 ## explicit; go 1.13
-# golang.org/x/sys v0.8.0
+# golang.org/x/sys v0.10.0
 ## explicit; go 1.17
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
