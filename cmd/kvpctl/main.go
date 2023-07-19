@@ -209,7 +209,7 @@ func verifyArgs(op kvpcmd, lenArgs int) {
 			printHelp()
 		}
 	case get:
-		if lenArgs > 4 || lenArgs < 2 || lenArgs == 3 {
+		if lenArgs < 2 || lenArgs > 3 {
 			printHelp()
 		}
 	}
