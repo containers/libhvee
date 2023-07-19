@@ -51,7 +51,7 @@ func printHelp() {
 	fmt.Printf("Usage: %s <vm name> (get|add|add-ign|rm|edit|put|clear) [<key>] [<value>]\n\n", os.Args[0])
 	fmt.Printf("\tget   = get all keys or a specific key\n")
 	fmt.Printf("\tadd   = create a key if it doesn't exist\n")
-	fmt.Printf("\tadd-ign   = split and add key value pairs for an Ignition file\n")
+	fmt.Printf("\tadd-ign   = split and add key-value pairs for an Ignition config\n")
 	fmt.Printf("\tedit  = change a key that exists\n")
 	fmt.Printf("\tput   = create or edit a key\n")
 	fmt.Printf("\trm    = delete one or more keys\n")
@@ -102,7 +102,7 @@ func main() {
 	case clear:
 		err = clearOperation(vm)
 	case addIgn:
-		err = addIgnFile(vm, os.Args[3], os.Args[4])
+		err = addIgnFile(vm, os.Args[3])
 
 	default:
 		fmt.Printf("Operation must be get, add, add-ign, rm, edit, clear, or put\n")
@@ -194,8 +194,12 @@ loop:
 
 func verifyArgs(op kvpcmd, lenArgs int) {
 	switch op {
-	case add, put, edit, addIgn:
+	case add, put, edit:
 		if lenArgs < 4 || lenArgs > 4 {
+			printHelp()
+		}
+	case addIgn:
+		if lenArgs < 3 || lenArgs > 3 {
 			printHelp()
 		}
 	case rm:
@@ -211,7 +215,7 @@ func verifyArgs(op kvpcmd, lenArgs int) {
 	}
 }
 
-func addIgnFile(vm *hypervctl.VirtualMachine, inputFilename, keyName string) error {
+func addIgnFile(vm *hypervctl.VirtualMachine, inputFilename string) error {
 	b, err := os.ReadFile(inputFilename)
 	if err != nil {
 		return err
@@ -221,7 +225,7 @@ func addIgnFile(vm *hypervctl.VirtualMachine, inputFilename, keyName string) err
 		return err
 	}
 	for i, v := range parts {
-		key := fmt.Sprintf("%s%d", keyName, i)
+		key := fmt.Sprintf("ignition.config.%d", i)
 		if err := vm.AddKeyValuePair(key, v); err != nil {
 			return err
 		}
