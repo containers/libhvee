@@ -1,5 +1,8 @@
 
 # Release Notes
+## 0.4.0
+* Changed add-ign command to no longer require specifying the constant ignition config key prefix 
+* Fixed get argument validation
 
 ## 0.3.0
 * Small change in return type for error code
