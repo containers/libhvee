@@ -33,11 +33,11 @@ func main() {
 	fmt.Println(itemStr)
 
 	vmms, err := service.GetSingletonInstance("Msvm_VirtualSystemManagementService")
-	defer vmms.Close()
 	if err != nil {
 		panic(err)
 	}
 
+	defer vmms.Close()
 	const wql = "Select * From Msvm_ComputerSystem Where ElementName='%s'"
 
 	computerSystem, err := service.FindFirstInstance(fmt.Sprintf(wql, "New Virtual Machine"))

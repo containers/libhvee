@@ -11,6 +11,7 @@ import (
 
 	"github.com/containers/libhvee/pkg/hypervctl"
 	"github.com/containers/libhvee/pkg/kvp/ginsu"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows"
 )
 
@@ -145,7 +146,11 @@ func clearOperation(vm *hypervctl.VirtualMachine) error {
 	if err == nil {
 		// disable line input for single char reads
 		_ = windows.SetConsoleMode(handle, mode & ^lineInputModeFlag)
-		defer windows.SetConsoleMode(handle, mode)
+		defer func() {
+			if err := windows.SetConsoleMode(handle, mode); err != nil {
+				logrus.Error(err)
+			}
+		}()
 
 	}
 
