@@ -1,6 +1,7 @@
 //go:build windows
 // +build windows
 
+//nolint:unused
 package hypervctl
 
 import (
