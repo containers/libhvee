@@ -1,0 +1,12 @@
+prepare:
+    - how: install
+      package:
+        - golang
+
+/validate:
+    summary: Validate code
+    execute:
+        how: tmt
+        script: |
+            make .install.golangci-lint
+            make validate
