@@ -20,7 +20,7 @@ func getVms() (string, error) {
 	vmms := hypervctl.VirtualMachineManager{}
 	vms, err := vmms.GetAll()
 	if err != nil {
-		return "", fmt.Errorf("Could not retrieve virtual machines : %s\n", err.Error())
+		return "", fmt.Errorf("Could not retrieve virtual machines: %s\n", err.Error())
 	}
 	b, err := json.MarshalIndent(vms, "", "\t")
 	if err != nil {
