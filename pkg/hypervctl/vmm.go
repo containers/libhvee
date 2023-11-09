@@ -24,13 +24,22 @@ func NewVirtualMachineManager() *VirtualMachineManager {
 	return &VirtualMachineManager{}
 }
 
+func NewLocalHyperVService() (*wmiext.Service, error) {
+	service, err := wmiext.NewLocalService(HyperVNamespace)
+	if err != nil {
+		return nil, translateCommonHyperVWmiError(err)
+	}
+
+	return service, nil
+}
+
 func (vmm *VirtualMachineManager) GetAll() ([]*VirtualMachine, error) {
 	// Fetch through settings to avoid locale sensitive properties
 	const wql = "Select * From Msvm_VirtualSystemSettingData Where VirtualSystemType = 'Microsoft:Hyper-V:System:Realized'"
 
 	var service *wmiext.Service
 	var err error
-	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = NewLocalHyperVService(); err != nil {
 		return []*VirtualMachine{}, err
 	}
 	defer service.Close()
@@ -86,7 +95,7 @@ func (vmm *VirtualMachineManager) GetMachine(name string) (*VirtualMachine, erro
 	var service *wmiext.Service
 	var err error
 
-	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = NewLocalHyperVService(); err != nil {
 		return vm, err
 	}
 	defer service.Close()
@@ -121,7 +130,7 @@ func (vmm *VirtualMachineManager) findVMFromSettings(service *wmiext.Service, se
 func (*VirtualMachineManager) CreateVhdxFile(path string, maxSize uint64) error {
 	var service *wmiext.Service
 	var err error
-	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = NewLocalHyperVService(); err != nil {
 		return err
 	}
 	defer service.Close()
@@ -172,7 +181,7 @@ func (vmm *VirtualMachineManager) GetSummaryInformation(requestedFields SummaryR
 func (vmm *VirtualMachineManager) getSummaryInformation(settingsPath string, requestedFields SummaryRequestSet) ([]SummaryInformation, error) {
 	var service *wmiext.Service
 	var err error
-	if service, err = wmiext.NewLocalService(HyperVNamespace); err != nil {
+	if service, err = NewLocalHyperVService(); err != nil {
 		return nil, err
 	}
 	defer service.Close()
