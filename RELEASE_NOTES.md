@@ -1,5 +1,17 @@
 
 # Release Notes
+
+## 0.5.0
+* Improved error handling around detection of HyperV itself
+* Fixed bug related to local sensitive properties
+* Hushed some benign errors being emitted with logrus
+* Removal of unused code and dead-end code
+* Various go-lint fixes
+* Added getmemory method
+* Changed wql selector to find virtual machines over WMI
+* Added ability for force stop of a VM
+* Increased stop wait time and attempts
+
 ## 0.4.0
 * Changed add-ign command to no longer require specifying the constant ignition config key prefix 
 * Fixed get argument validation
