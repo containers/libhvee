@@ -11,6 +11,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 )
 
+const defaultDiskSize = 10
+
 func setDiskDir() string {
 	hd, err := os.UserHomeDir()
 	if err != nil {
@@ -32,7 +34,8 @@ type testVM struct {
 }
 
 func (t *testVM) stopAndRemove() error {
-	if err := t.vm.StopWithForce(); err != nil {
+	err := t.vm.StopWithForce()
+	if err != nil && !errors.Is(err, hypervctl.ErrMachineNotRunning) {
 		fmt.Println(err)
 		return err
 	}
@@ -50,7 +53,7 @@ func (t *testVM) refresh() error {
 
 var defaultConfig = hypervctl.HardwareConfig{
 	CPUs:     2,
-	DiskSize: 10,
+	DiskSize: defaultDiskSize,
 	Memory:   4096,
 	Network:  false,
 }
