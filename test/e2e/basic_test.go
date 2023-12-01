@@ -53,7 +53,7 @@ var _ = Describe("basic operation test", func() {
 
 		// TODO I get an error when trying to immediately stop a VM so this is a placeholder
 		// for "wait"
-		time.Sleep(5 * time.Second)
+		time.Sleep(20 * time.Second)
 
 		// stop the vm
 		err = tvm.vm.StopWithForce()
