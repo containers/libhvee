@@ -1,0 +1,31 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+
+  /*************************************************
+   ****** Global/general configuration options *****
+   *************************************************/
+
+  // Re-use predefined sets of configuration options to DRY
+  "extends": [
+    // https://github.com/containers/automation/blob/main/renovate/defaults.json5
+    "github>containers/automation//renovate/defaults.json5"
+  ],
+
+  // Expected to have low to moderate PR traffic, so stick with auto
+  "rebaseWhen": "auto",
+
+  /*************************************************
+   *** Repository-specific configuration options ***
+   *************************************************/
+
+  // Don't leave dep. update. PRs "hanging", assign them to people.
+  "assignees": ["containers/libhvee-maintainers"],
+
+  "ignorePaths": [
+    "**/vendor/**",
+    "**/docs/**",
+    "**/examples/**",
+    "**/tests/**"
+  ],
+
+}

@@ -1,0 +1,23 @@
+env:
+    IMAGE_SUFFIX: "c20231116t174419z-f39f38d13"
+    WINDOWS_AMI: "win-server-wsl-${IMAGE_SUFFIX}"
+
+aws_credentials: ENCRYPTED[1659bb9d94b525492b4cab3f3e9a2ad8708fd6c23e821818b59875bd9b521b11080ce1bf11dbd46876978e70a99ef118]
+
+win_test_task:
+    name: win_test
+    alias: windows_test
+    only_if: >-
+        $CIRRUS_TAG == '' &&
+        $CIRRUS_CHANGE_TITLE !=~ '.*CI:DOCS.*'
+    ec2_instance:
+        image: "${WINDOWS_AMI}"
+        region: us-east-1
+        type: m5zn.metal
+        platform: windows
+    env:
+        CIRRUS_WORKING_DIR: "${LOCALAPPDATA}\\cirrus-ci-build"
+        CIRRUS_SHELL: powershell
+        PATH: "${PATH};C:\\ProgramData\\chocolatey\\bin"
+    main_script: |
+        .\winmake.ps1 localtest

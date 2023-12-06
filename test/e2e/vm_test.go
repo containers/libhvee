@@ -52,7 +52,7 @@ var defaultConfig = hypervctl.HardwareConfig{
 	CPUs:     2,
 	DiskSize: 10,
 	Memory:   4096,
-	Network:  true,
+	Network:  false,
 }
 
 func newVMFromConfig(name string, config *hypervctl.HardwareConfig) (*hypervctl.VirtualMachineManager, *hypervctl.VirtualMachine, error) {
