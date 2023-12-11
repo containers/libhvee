@@ -1,5 +1,5 @@
-github.com/containers/podman/v4 v4.8.0 h1:UIabha6E2/wfCCe5/Kqn9/k6MAz/CnjcADBlo6WH02Y=
-github.com/containers/podman/v4 v4.8.0/go.mod h1:xtbor/KJs+xeWFS6KZmW7TGsKFNxBtnawYBS9AdFvHM=
+github.com/containers/podman/v4 v4.8.2 h1:g8lLSQQwDa4nhh/sRUu+7AONp7kUJSOPJWq0dmG9DZQ=
+github.com/containers/podman/v4 v4.8.2/go.mod h1:D6x9VeKVr0eqgqISBbrJ0c/g5eKcnJGrRdXxYShrOnE=
 github.com/containers/storage v1.51.0 h1:AowbcpiWXzAjHosKz7MKvPEqpyX+ryZA/ZurytRrFNA=
 github.com/containers/storage v1.51.0/go.mod h1:ybl8a3j1PPtpyaEi/5A6TOFs+5TrEyObeKJzVtkUlfc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

@@ -3,7 +3,7 @@ module github.com/containers/libhvee
 go 1.18
 
 require (
-	github.com/containers/podman/v4 v4.8.0
+	github.com/containers/podman/v4 v4.8.2
 	github.com/containers/storage v1.51.0
 	github.com/go-ole/go-ole v1.3.0
 	github.com/onsi/ginkgo/v2 v2.13.2
