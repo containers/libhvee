@@ -1,6 +1,11 @@
 
 # Release Notes
 
+## 0.6.0
+* Add method GetMachineExists
+* Dependency updates
+* Add ability to resize HyperV disks
+
 ## 0.5.0
 * Improved error handling around detection of HyperV itself
 * Fixed bug related to local sensitive properties
