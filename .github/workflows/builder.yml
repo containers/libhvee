@@ -1,0 +1,70 @@
+name: builder
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request: 
+
+env:
+  OCI_E2E_NAME: libhvee-e2e
+  CORRELATE: ${{ github.sha }}
+
+jobs:
+  save-gh-context:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:        
+    - name: Correlate builds 
+      shell: bash
+      env:
+        GH_CONTEXT: ${{ toJSON(github) }}
+      run: echo $GH_CONTEXT > gh_context.json
+
+    - name: Upload GH context as an artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: gh_context
+        path: ./gh_context.json
+
+  build-oci-e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v4
+
+    - name: Build and archive e2e image
+      run: |
+        VERSION=${{ env.CORRELATE}} make build-oci-e2e 
+        podman save -o ${{ env.OCI_E2E_NAME }}.tar quay.io/rhqp/${{ env.OCI_E2E_NAME}}:v${{ env.CORRELATE }}
+
+    - name: Upload e2e flat image as artifact 
+      uses: actions/upload-artifact@v4
+      with:
+        name: libhvee-e2e-v${{ env.CORRELATE }}
+        path: libhvee-e2e.tar
+
+  build-executables:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.18'
+
+    - name: Build libhvee executables
+      run: make build 
+
+    - name: Upload libhvee executables as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: libhvee-v${{ env.CORRELATE }}
+        path: bin/*.exe
