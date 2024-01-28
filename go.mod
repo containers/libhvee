@@ -6,8 +6,8 @@ require (
 	github.com/containers/podman/v4 v4.9.0
 	github.com/containers/storage v1.51.0
 	github.com/go-ole/go-ole v1.3.0
-	github.com/onsi/ginkgo/v2 v2.13.2
-	github.com/onsi/gomega v1.30.0
+	github.com/onsi/ginkgo/v2 v2.15.0
+	github.com/onsi/gomega v1.31.1
 	github.com/schollz/progressbar/v3 v3.14.1
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/sys v0.16.0
@@ -20,9 +20,9 @@ require (
 	github.com/google/pprof v0.0.0-20230323073829-e72429f035bd // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
-	golang.org/x/net v0.18.0 // indirect
+	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.14.0 // indirect
+	golang.org/x/tools v0.16.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
