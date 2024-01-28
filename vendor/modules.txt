@@ -1,4 +1,4 @@
-# github.com/containers/podman/v4 v4.8.3
+# github.com/containers/podman/v4 v4.9.0
 ## explicit; go 1.18
 github.com/containers/podman/v4/pkg/strongunits
 # github.com/containers/storage v1.51.0
@@ -77,12 +77,12 @@ golang.org/x/net/context
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-# golang.org/x/sys v0.15.0
+# golang.org/x/sys v0.16.0
 ## explicit; go 1.18
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.15.0
+# golang.org/x/term v0.16.0
 ## explicit; go 1.18
 golang.org/x/term
 # golang.org/x/text v0.14.0
