@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/containers/podman/v4 v4.9.0
-	github.com/containers/storage v1.51.0
+	github.com/containers/storage v1.52.0
 	github.com/go-ole/go-ole v1.3.0
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1

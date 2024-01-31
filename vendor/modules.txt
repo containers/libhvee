@@ -1,8 +1,8 @@
 # github.com/containers/podman/v4 v4.9.0
 ## explicit; go 1.18
 github.com/containers/podman/v4/pkg/strongunits
-# github.com/containers/storage v1.51.0
-## explicit; go 1.19
+# github.com/containers/storage v1.52.0
+## explicit; go 1.20
 github.com/containers/storage/pkg/regexp
 github.com/containers/storage/pkg/stringid
 # github.com/go-logr/logr v1.3.0
