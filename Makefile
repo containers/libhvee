@@ -16,11 +16,17 @@ bin/golangci-lint:
 validate: bin/golangci-lint
 	./bin/golangci-lint run  --skip-dirs "test/e2e"
 
-.PHONY: build 
+.PHONY: build
 build: validate bin bin/kvpctl.exe bin/dumpvms.exe bin/createvm.exe bin/updatevm.exe
 
 bin:
 	mkdir -p bin
+
+.PHONY: vendor
+vendor:
+	go mod tidy
+	go mod vendor
+	go mod verify
 
 
 bin/kvpctl.exe: $(SRC) go.mod go.sum
