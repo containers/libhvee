@@ -2,8 +2,8 @@ package e2e
 
 import (
 	"fmt"
+	"github.com/containers/common/pkg/strongunits"
 	"github.com/containers/libhvee/pkg/hypervctl"
-	"github.com/containers/podman/v4/pkg/strongunits"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

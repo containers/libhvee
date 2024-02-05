@@ -1,7 +1,7 @@
-github.com/containers/podman/v4 v4.9.0 h1:K7lSZAlloEa3SoEHebFC+v8fY+gBMhFfjpestFDdphQ=
-github.com/containers/podman/v4 v4.9.0/go.mod h1:mYrL/jqmfFbcyWpiGhXgGJJgCp0V18okNUFzsADNv7I=
-github.com/containers/storage v1.52.0 h1:8QFFeJg2cQFN0TyJguxHrSz3bl7XtMRnfXrTsvLVkuY=
-github.com/containers/storage v1.52.0/go.mod h1:PE+L330tisEjQrAVkfAlW8ECvqzc/jusrxJzu9TEi2w=
+github.com/containers/common v0.57.1-0.20240205132223-de5cb00e891c h1:Xzo9t4eIalkeilcmYTz0YEgL7hMrGQ12GK6UlSHrEsU=
+github.com/containers/common v0.57.1-0.20240205132223-de5cb00e891c/go.mod h1:s1gEyucR3ryIex1aDMo1KzbfpvRl0CaGER6s5jqXRkI=
+github.com/containers/storage v1.52.1-0.20240130205044-62997abeaf2f h1:BJSLHe7f1tgu53d8mGIK/y2KhEev5lggWlIk1rWYT7k=
+github.com/containers/storage v1.52.1-0.20240130205044-62997abeaf2f/go.mod h1:T/ZMocbhShnMLIF0pdkiLPwpkwlGlyUWJeSXnfC/uew=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -37,8 +37,8 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
-golang.org/x/net v0.19.0 h1:zTwKpTd2XuCqf8huc7Fo2iSy+4RHPd10s4KzeTnVr1c=
-golang.org/x/net v0.19.0/go.mod h1:CfAk/cbD4CthTvqiEl8NpboMuiuOYsAr/7NOjZJtv1U=
+golang.org/x/net v0.20.0 h1:aCL9BSgETF1k+blQaYUBx9hJ9LOGP3gAVemcZlf1Kpo=
+golang.org/x/net v0.20.0/go.mod h1:z8BVo6PvndSri0LbOE3hAn0apkU+1YvI6E70E9jsnvY=
 golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.1.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=

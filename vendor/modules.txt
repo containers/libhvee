@@ -1,7 +1,7 @@
-# github.com/containers/podman/v4 v4.9.0
-## explicit; go 1.18
-github.com/containers/podman/v4/pkg/strongunits
-# github.com/containers/storage v1.52.0
+# github.com/containers/common v0.57.1-0.20240205132223-de5cb00e891c
+## explicit; go 1.20
+github.com/containers/common/pkg/strongunits
+# github.com/containers/storage v1.52.1-0.20240130205044-62997abeaf2f
 ## explicit; go 1.20
 github.com/containers/storage/pkg/regexp
 github.com/containers/storage/pkg/stringid
@@ -71,7 +71,7 @@ github.com/schollz/progressbar/v3
 # github.com/sirupsen/logrus v1.9.3
 ## explicit; go 1.13
 github.com/sirupsen/logrus
-# golang.org/x/net v0.19.0
+# golang.org/x/net v0.20.0
 ## explicit; go 1.18
 golang.org/x/net/context
 golang.org/x/net/html
