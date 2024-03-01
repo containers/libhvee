@@ -1,7 +1,7 @@
 # github.com/containers/common v0.57.1-0.20240205132223-de5cb00e891c
 ## explicit; go 1.20
 github.com/containers/common/pkg/strongunits
-# github.com/containers/storage v1.52.1-0.20240130205044-62997abeaf2f
+# github.com/containers/storage v1.52.1-0.20240301185114-bdd7d8188030
 ## explicit; go 1.20
 github.com/containers/storage/pkg/regexp
 github.com/containers/storage/pkg/stringid
