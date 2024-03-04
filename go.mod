@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/containers/common v0.57.1-0.20240205132223-de5cb00e891c
-	github.com/containers/storage v1.52.1-0.20240301185114-bdd7d8188030
+	github.com/containers/storage v1.53.0
 	github.com/go-ole/go-ole v1.3.0
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
