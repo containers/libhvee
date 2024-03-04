@@ -5,7 +5,7 @@ github.com/containers/common/pkg/strongunits
 ## explicit; go 1.20
 github.com/containers/storage/pkg/regexp
 github.com/containers/storage/pkg/stringid
-# github.com/go-logr/logr v1.3.0
+# github.com/go-logr/logr v1.4.1
 ## explicit; go 1.18
 github.com/go-logr/logr
 github.com/go-logr/logr/funcr
@@ -28,7 +28,7 @@ github.com/google/pprof/profile
 # github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 ## explicit
 github.com/mitchellh/colorstring
-# github.com/onsi/ginkgo/v2 v2.15.0
+# github.com/onsi/ginkgo/v2 v2.16.0
 ## explicit; go 1.20
 github.com/onsi/ginkgo/v2
 github.com/onsi/ginkgo/v2/config
@@ -104,8 +104,9 @@ golang.org/x/text/internal/utf8internal
 golang.org/x/text/language
 golang.org/x/text/runes
 golang.org/x/text/transform
-# golang.org/x/tools v0.16.1
+# golang.org/x/tools v0.17.0
 ## explicit; go 1.18
+golang.org/x/tools/cover
 golang.org/x/tools/go/ast/inspector
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
