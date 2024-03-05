@@ -1,7 +1,7 @@
 github.com/containers/common v0.57.1-0.20240205132223-de5cb00e891c h1:Xzo9t4eIalkeilcmYTz0YEgL7hMrGQ12GK6UlSHrEsU=
 github.com/containers/common v0.57.1-0.20240205132223-de5cb00e891c/go.mod h1:s1gEyucR3ryIex1aDMo1KzbfpvRl0CaGER6s5jqXRkI=
-github.com/containers/storage v1.52.1-0.20240301185114-bdd7d8188030 h1:2Ksbho+rB+bkVbGMuaCAHPZnrkL9heCdisQIhnTWp+8=
-github.com/containers/storage v1.52.1-0.20240301185114-bdd7d8188030/go.mod h1:pujcoOSc+upx15Jirdkebhtd8uJiLwbSd/mYT6zDJK8=
+github.com/containers/storage v1.53.0 h1:VSES3C/u1pxjTJIXvLrSmyP7OBtDky04oGu07UvdTEA=
+github.com/containers/storage v1.53.0/go.mod h1:pujcoOSc+upx15Jirdkebhtd8uJiLwbSd/mYT6zDJK8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
