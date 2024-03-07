@@ -1,6 +1,10 @@
 
 # Release Notes
 
+## 0.7.0
+* Changed origin of strongunits package to containers/common
+* Dependency updates
+
 ## 0.6.0
 * Add method GetMachineExists
 * Dependency updates
