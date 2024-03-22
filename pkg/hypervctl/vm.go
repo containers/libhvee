@@ -568,8 +568,12 @@ func (vm *VirtualMachine) remove() (int32, error) {
 		srv *wmiext.Service
 	)
 
+	refreshVM, err := vm.vmm.GetMachine(vm.ElementName)
+	if err != nil {
+		return 0, err
+	}
 	// Check for disabled/stopped state
-	if !Disabled.equal(vm.EnabledState) {
+	if !Disabled.equal(refreshVM.EnabledState) {
 		return -1, ErrMachineStateInvalid
 	}
 	if srv, err = NewLocalHyperVService(); err != nil {
