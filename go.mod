@@ -6,7 +6,7 @@ require (
 	github.com/containers/common v0.58.0
 	github.com/containers/storage v1.53.0
 	github.com/go-ole/go-ole v1.3.0
-	github.com/onsi/ginkgo/v2 v2.17.0
+	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.32.0
 	github.com/schollz/progressbar/v3 v3.14.2
 	github.com/sirupsen/logrus v1.9.3
