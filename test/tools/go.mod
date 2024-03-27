@@ -2,7 +2,7 @@ module github.com/containers/libhvee/test/tools
 
 go 1.20
 
-require github.com/onsi/ginkgo/v2 v2.17.0
+require github.com/onsi/ginkgo/v2 v2.17.1
 
 require (
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
