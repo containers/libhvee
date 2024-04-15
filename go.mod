@@ -3,7 +3,7 @@ module github.com/containers/libhvee
 go 1.18
 
 require (
-	github.com/containers/common v0.58.1
+	github.com/containers/common v0.58.2
 	github.com/containers/storage v1.53.0
 	github.com/go-ole/go-ole v1.3.0
 	github.com/onsi/ginkgo/v2 v2.17.1
