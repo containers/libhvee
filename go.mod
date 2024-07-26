@@ -6,13 +6,13 @@ toolchain go1.21.10
 
 require (
 	github.com/containers/common v0.59.1
-	github.com/containers/storage v1.54.0
+	github.com/containers/storage v1.55.0
 	github.com/go-ole/go-ole v1.3.0
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
 	github.com/schollz/progressbar/v3 v3.14.4
 	github.com/sirupsen/logrus v1.9.3
-	golang.org/x/sys v0.21.0
+	golang.org/x/sys v0.22.0
 )
 
 require (

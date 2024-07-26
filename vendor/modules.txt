@@ -1,7 +1,7 @@
 # github.com/containers/common v0.59.1
 ## explicit; go 1.21
 github.com/containers/common/pkg/strongunits
-# github.com/containers/storage v1.54.0
+# github.com/containers/storage v1.55.0
 ## explicit; go 1.21
 github.com/containers/storage/pkg/regexp
 github.com/containers/storage/pkg/stringid
@@ -77,7 +77,7 @@ golang.org/x/net/context
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-# golang.org/x/sys v0.21.0
+# golang.org/x/sys v0.22.0
 ## explicit; go 1.18
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
