@@ -1,7 +1,7 @@
-# github.com/containers/common v0.59.1
-## explicit; go 1.21
+# github.com/containers/common v0.60.0
+## explicit; go 1.21.0
 github.com/containers/common/pkg/strongunits
-# github.com/containers/storage v1.54.0
+# github.com/containers/storage v1.55.0
 ## explicit; go 1.21
 github.com/containers/storage/pkg/regexp
 github.com/containers/storage/pkg/stringid
@@ -71,7 +71,7 @@ github.com/schollz/progressbar/v3
 # github.com/sirupsen/logrus v1.9.3
 ## explicit; go 1.13
 github.com/sirupsen/logrus
-# golang.org/x/net v0.25.0
+# golang.org/x/net v0.26.0
 ## explicit; go 1.18
 golang.org/x/net/context
 golang.org/x/net/html
@@ -82,10 +82,10 @@ golang.org/x/net/html/charset
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.20.0
+# golang.org/x/term v0.22.0
 ## explicit; go 1.18
 golang.org/x/term
-# golang.org/x/text v0.15.0
+# golang.org/x/text v0.16.0
 ## explicit; go 1.18
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
@@ -104,7 +104,7 @@ golang.org/x/text/internal/utf8internal
 golang.org/x/text/language
 golang.org/x/text/runes
 golang.org/x/text/transform
-# golang.org/x/tools v0.21.0
+# golang.org/x/tools v0.22.0
 ## explicit; go 1.19
 golang.org/x/tools/cover
 golang.org/x/tools/go/ast/inspector
