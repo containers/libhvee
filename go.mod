@@ -5,7 +5,7 @@ go 1.21.0
 toolchain go1.21.12
 
 require (
-	github.com/containers/common v0.60.0
+	github.com/containers/common v0.60.1
 	github.com/containers/storage v1.55.0
 	github.com/go-ole/go-ole v1.3.0
 	github.com/onsi/ginkgo/v2 v2.20.0
