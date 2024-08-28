@@ -1,6 +1,9 @@
 
 # Release Notes
 
+## 0.8.0
+* Multitude of updated dependencies
+
 ## 0.7.0
 * Changed origin of strongunits package to containers/common
 * Dependency updates
