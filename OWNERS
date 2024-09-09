@@ -3,6 +3,8 @@ approvers:
   - baude
   - cevich
   - edsantiago
+  - inknos
+  - l0rd
   - lsm5
   - Luap99
   - mheon
@@ -14,7 +16,8 @@ reviewers:
   - baude
   - cevich
   - edsantiago
-  - flouthoc
+  - inknos
+  - l0rd
   - lsm5
   - Luap99
   - mheon
