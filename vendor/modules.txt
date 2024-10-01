@@ -1,4 +1,4 @@
-# github.com/containers/common v0.60.3
+# github.com/containers/common v0.60.4
 ## explicit; go 1.21.0
 github.com/containers/common/pkg/strongunits
 # github.com/containers/storage v1.55.0
