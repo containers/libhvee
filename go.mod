@@ -10,7 +10,7 @@ require (
 	github.com/go-ole/go-ole v1.3.0
 	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.2
-	github.com/schollz/progressbar/v3 v3.16.0
+	github.com/schollz/progressbar/v3 v3.16.1
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/sys v0.25.0
 )
