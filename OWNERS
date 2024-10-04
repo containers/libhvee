@@ -1,7 +1,6 @@
 approvers:
   - ashley-cui
   - baude
-  - cevich
   - edsantiago
   - inknos
   - l0rd
@@ -9,12 +8,9 @@ approvers:
   - Luap99
   - mheon
   - n1hility
-  - rhatdan
-  - vrothberg
 reviewers:
   - ashley-cui
   - baude
-  - cevich
   - edsantiago
   - inknos
   - l0rd
@@ -22,5 +18,3 @@ reviewers:
   - Luap99
   - mheon
   - n1hility
-  - rhatdan
-  - vrothberg
