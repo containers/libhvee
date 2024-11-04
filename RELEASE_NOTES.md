@@ -1,6 +1,9 @@
 
 # Release Notes
 
+## 0.9.0
+* Go Dependency updates
+
 ## 0.8.0
 * Multitude of updated dependencies
 
