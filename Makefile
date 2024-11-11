@@ -5,7 +5,7 @@ SRC = $(shell find . -type f -name '*.go')
 .PHONY: default
 default: build
 
-GOLANGCI_LINT_VERSION := 1.61.0
+GOLANGCI_LINT_VERSION := 1.62.0
 bin/golangci-lint:
 	VERSION=$(GOLANGCI_LINT_VERSION) ./hack/install_golangci.sh
 
