@@ -1,11 +1,11 @@
 module github.com/containers/libhvee
 
-go 1.22.0
+go 1.22.6
 
-toolchain go1.22.8
+toolchain go1.22.9
 
 require (
-	github.com/containers/common v0.60.4
+	github.com/containers/common v0.61.0
 	github.com/containers/storage v1.56.0
 	github.com/go-ole/go-ole v1.3.0
 	github.com/onsi/ginkgo/v2 v2.21.0
@@ -24,7 +24,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/term v0.26.0 // indirect
-	golang.org/x/text v0.19.0 // indirect
+	golang.org/x/text v0.20.0 // indirect
 	golang.org/x/tools v0.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
