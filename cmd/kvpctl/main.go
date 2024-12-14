@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -224,6 +225,10 @@ func addIgnFile(vm *hypervctl.VirtualMachine, inputFilename string) error {
 	b, err := os.ReadFile(inputFilename)
 	if err != nil {
 		return err
+	}
+	var js json.RawMessage
+	if err := json.Unmarshal(b, &js); err != nil {
+		return fmt.Errorf("invalid JSON format: %v", err)
 	}
 	parts, err := ginsu.Dice(bytes.NewReader(b))
 	if err != nil {
