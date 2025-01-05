@@ -12,10 +12,11 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"github.com/ulikunitz/xz"
 )
 
 const (
-	fedoraBaseDirEndpoint = "https://kojipkgs.fedoraproject.org/compose/cloud/latest-Fedora-Cloud-39/compose"
+	fedoraBaseDirEndpoint = "https://kojipkgs.fedoraproject.org/compose/cloud/latest-Fedora-Cloud-40/compose"
 )
 
 // Fedora metadata for cloud downloads
@@ -100,7 +101,7 @@ func (m fedoraCloudMetadata) downloadPathForVHD() (string, string, error) {
 		return "", "", errors.New("unable to parse metadata for cloud image")
 	}
 	for _, ci := range val {
-		if ci.Format == "vhd" { // fedora does not make a vhdx
+		if ci.Format == "vhd.xz" { // fedora does not make a vhdx
 			return fmt.Sprintf("%s/%s", fedoraBaseDirEndpoint, ci.Path), ci.Checksums["sha256"], nil
 		}
 	}
@@ -166,7 +167,39 @@ func getTestImage() (string, error) {
 			return "", err
 		}
 	}
-	return dstPath, nil
+	// Decompress the downloaded vhdfixed.xz file
+	vhdPath := filepath.Join(defaultCacheDirPath, filepath.Base(downloadPath[:len(downloadPath)-len(".vhdfixed.xz")])) + ".vhd"
+	err = decompressVhdXZ(dstPath, vhdPath)
+	if err != nil {
+		return "", err
+	}
+	return vhdPath, nil
+}
+
+func decompressVhdXZ(src string, dst string) error {
+	f, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	r, err := xz.NewReader(f)
+	if err != nil {
+		return fmt.Errorf("xz decompression failed: %v", err)
+	}
+
+	// Directly copy the decompressed data to the destination file
+	outFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+
+	_, err = io.Copy(outFile, r)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func archFromGOOS() string {

@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 )
 
-const defaultDiskSize = 10
+const defaultDiskSize = 5
 
 func setDiskDir() string {
 	hd, err := os.UserHomeDir()

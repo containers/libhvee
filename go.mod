@@ -12,6 +12,7 @@ require (
 	github.com/onsi/gomega v1.36.1
 	github.com/schollz/progressbar/v3 v3.17.1
 	github.com/sirupsen/logrus v1.9.3
+	github.com/ulikunitz/xz v0.5.12
 	golang.org/x/sys v0.28.0
 )
 
