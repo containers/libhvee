@@ -6,17 +6,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	. "github.com/onsi/ginkgo/v2"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
+
+	. "github.com/onsi/ginkgo/v2"
 	"github.com/ulikunitz/xz"
 )
 
 const (
-	fedoraBaseDirEndpoint = "https://kojipkgs.fedoraproject.org/compose/cloud/latest-Fedora-Cloud-40/compose"
+	fedoraBaseDirEndpoint = "https://kojipkgs.fedoraproject.org/compose/cloud/latest-Fedora-Cloud-41/compose"
 )
 
 // Fedora metadata for cloud downloads
