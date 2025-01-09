@@ -8,7 +8,7 @@ require (
 	github.com/containers/common v0.61.0
 	github.com/containers/storage v1.56.0
 	github.com/go-ole/go-ole v1.3.0
-	github.com/onsi/ginkgo/v2 v2.22.1
+	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/sirupsen/logrus v1.9.3
