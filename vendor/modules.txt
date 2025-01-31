@@ -1,7 +1,7 @@
 # github.com/containers/common v0.61.1
 ## explicit; go 1.22.6
 github.com/containers/common/pkg/strongunits
-# github.com/containers/storage v1.56.1
+# github.com/containers/storage v1.57.1
 ## explicit; go 1.22.0
 github.com/containers/storage/pkg/regexp
 github.com/containers/storage/pkg/stringid
