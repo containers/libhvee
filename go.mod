@@ -1,12 +1,12 @@
 module github.com/containers/libhvee
 
-go 1.22.6
+go 1.22.8
 
-toolchain go1.22.9
+toolchain go1.22.11
 
 require (
-	github.com/containers/common v0.61.1
-	github.com/containers/storage v1.56.1
+	github.com/containers/common v0.62.0
+	github.com/containers/storage v1.57.1
 	github.com/go-ole/go-ole v1.3.0
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
@@ -23,7 +23,7 @@ require (
 	github.com/google/pprof v0.0.0-20241210010833-40e02aabc2ad // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/term v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/tools v0.28.0 // indirect
