@@ -1,7 +1,7 @@
-# github.com/containers/common v0.61.1
-## explicit; go 1.22.6
+# github.com/containers/common v0.62.0
+## explicit; go 1.22.8
 github.com/containers/common/pkg/strongunits
-# github.com/containers/storage v1.56.1
+# github.com/containers/storage v1.57.1
 ## explicit; go 1.22.0
 github.com/containers/storage/pkg/regexp
 github.com/containers/storage/pkg/stringid
@@ -78,7 +78,7 @@ github.com/ulikunitz/xz
 github.com/ulikunitz/xz/internal/hash
 github.com/ulikunitz/xz/internal/xlog
 github.com/ulikunitz/xz/lzma
-# golang.org/x/net v0.33.0
+# golang.org/x/net v0.34.0
 ## explicit; go 1.18
 golang.org/x/net/html
 golang.org/x/net/html/atom
