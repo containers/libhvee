@@ -1,6 +1,10 @@
 
 # Release Notes
 
+## 0.10.0
+* Add check for JSON formatting on ign files (#187)
+* Go Dependency updates
+
 ## 0.9.0
 * Go Dependency updates
 
