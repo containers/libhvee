@@ -29,3 +29,8 @@ require (
 	golang.org/x/tools v0.28.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+retract (
+	v1.10.1 // This version is used to publish retraction of v1.10.0
+	v1.10.0 // Typo version tag for 0.10.0
+)
