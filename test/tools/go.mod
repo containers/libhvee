@@ -4,7 +4,7 @@ go 1.23.0
 
 toolchain go1.23.7
 
-require github.com/onsi/ginkgo/v2 v2.23.2
+require github.com/onsi/ginkgo/v2 v2.23.3
 
 require (
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
