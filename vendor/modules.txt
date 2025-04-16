@@ -1,8 +1,8 @@
 # github.com/containers/common v0.62.3
 ## explicit; go 1.22.8
 github.com/containers/common/pkg/strongunits
-# github.com/containers/storage v1.57.2
-## explicit; go 1.22.0
+# github.com/containers/storage v1.58.0
+## explicit; go 1.23.0
 github.com/containers/storage/pkg/regexp
 github.com/containers/storage/pkg/stringid
 # github.com/go-logr/logr v1.4.2
