@@ -1,23 +1,39 @@
 env:
-    IMAGE_SUFFIX: "c20250422t130822z-f42f41d13"
+    IMAGE_SUFFIX: "c20250801t151127z-f42f41d13"
     WINDOWS_AMI: "win-server-wsl-${IMAGE_SUFFIX}"
 
 aws_credentials: ENCRYPTED[1659bb9d94b525492b4cab3f3e9a2ad8708fd6c23e821818b59875bd9b521b11080ce1bf11dbd46876978e70a99ef118]
 
-win_test_task:
-    name: win_test
-    alias: windows_test
+# YAML anchors for shared configurations
+.win_conditions: &win_conditions
     only_if: >-
         $CIRRUS_TAG == '' &&
         $CIRRUS_CHANGE_TITLE !=~ '.*CI:DOCS.*'
+
+.win_instance: &win_instance
     ec2_instance:
         image: "${WINDOWS_AMI}"
         region: us-east-1
         type: m5zn.metal
         platform: windows
+
+.win_env: &win_env
     env:
         CIRRUS_WORKING_DIR: "${LOCALAPPDATA}\\cirrus-ci-build"
         CIRRUS_SHELL: powershell
         PATH: "${PATH};C:\\ProgramData\\chocolatey\\bin"
+
+win_validate_task:
+    name: win_validate
+    alias: windows_validate
+    <<: [*win_conditions, *win_instance, *win_env]
+    main_script: |
+        .\winmake.ps1 validate
+
+win_test_task:
+    name: win_test
+    alias: windows_test
+    depends_on: win_validate
+    <<: [*win_conditions, *win_instance, *win_env]
     main_script: |
         .\winmake.ps1 localtest
