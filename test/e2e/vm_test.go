@@ -58,11 +58,6 @@ var defaultConfig = hypervctl.HardwareConfig{
 	Network:  false,
 }
 
-func newVMFromConfig(name string, config *hypervctl.HardwareConfig) (*hypervctl.VirtualMachineManager, *hypervctl.VirtualMachine, error) {
-	return newVM(name, config)
-
-}
-
 func (t *testVM) copyCacheDiskToVm() error {
 	if len(t.name) < 1 {
 		return errors.New("testVM has no name")
@@ -75,7 +70,9 @@ func (t *testVM) copyCacheDiskToVm() error {
 	if err != nil {
 		return err
 	}
-	defer dst.Close()
+	defer func() {
+		_ = dst.Close()
+	}()
 	return copyWithProgress(cachedImagePath, dst)
 }
 

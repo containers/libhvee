@@ -20,7 +20,7 @@ func getVms() (string, error) {
 	vmms := hypervctl.VirtualMachineManager{}
 	vms, err := vmms.GetAll()
 	if err != nil {
-		return "", fmt.Errorf("Could not retrieve virtual machines: %s\n", err.Error())
+		return "", fmt.Errorf("Could not retrieve virtual machines: %s\n", err.Error()) // nolint:staticcheck
 	}
 	b, err := json.MarshalIndent(vms, "", "\t")
 	if err != nil {
@@ -33,7 +33,7 @@ func dumpSummary() (string, error) {
 	vmms := hypervctl.VirtualMachineManager{}
 	summs, err := vmms.GetSummaryInformation(hypervctl.SummaryRequestNearAll)
 	if err != nil {
-		return "", fmt.Errorf("Could not retrieve virtual machine summaries: %v\n", err)
+		return "", fmt.Errorf("Could not retrieve virtual machine summaries: %v\n", err) // nolint:staticcheck
 	}
 	b, err := json.MarshalIndent(summs, "", "\t")
 	if err != nil {
