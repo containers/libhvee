@@ -218,7 +218,7 @@ func waitVMResult(res int32, service *wmiext.Service, job *wmiext.Instance, erro
 
 	if err != nil {
 		desc, _ := job.GetAsString("ErrorDescription")
-		desc = strings.Replace(desc, "\n", " ", -1)
+		desc = strings.ReplaceAll(desc, "\n", " ")
 		return fmt.Errorf("%s: %w (%s)", errorMsg, err, desc)
 	}
 

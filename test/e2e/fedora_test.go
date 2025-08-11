@@ -91,7 +91,7 @@ type FedoraCloudPayload struct {
 }
 
 type fedoraCloudMetadata struct {
-	Header  fedoraCloudHeader  `json:"'header'"`
+	Header  fedoraCloudHeader  `json:"header"`
 	Payload FedoraCloudPayload `json:"payload"`
 }
 
@@ -117,8 +117,9 @@ func checkIfCacheExistsAndLatest(dst string, latestSha string) (bool, error) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer f.Close()
-
+		defer func() {
+			_ = f.Close()
+		}()
 		h := sha256.New()
 		_, err = io.Copy(h, f)
 		if err != nil {
@@ -163,7 +164,9 @@ func getTestImage() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		defer dst.Close()
+		defer func() {
+			_ = dst.Close()
+		}()
 		if err := pullWithProgress(downloadPath, dst); err != nil {
 			return "", err
 		}
@@ -182,8 +185,9 @@ func decompressVhdXZ(src string, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-
+	defer func() {
+		_ = f.Close()
+	}()
 	r, err := xz.NewReader(f)
 	if err != nil {
 		return fmt.Errorf("xz decompression failed: %v", err)
@@ -194,7 +198,9 @@ func decompressVhdXZ(src string, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer outFile.Close()
+	defer func() {
+		_ = outFile.Close()
+	}()
 
 	_, err = io.Copy(outFile, r)
 	if err != nil {

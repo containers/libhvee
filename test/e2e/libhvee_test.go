@@ -34,7 +34,9 @@ func get(endpoint string) ([]byte, error) {
 	if resp.StatusCode != http.StatusOK {
 		Fail(fmt.Sprintf("get %s: status code: %d", endpoint, resp.StatusCode))
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	body, err := io.ReadAll(resp.Body)
 	return body, err
 }
@@ -52,7 +54,9 @@ func pullWithProgress(endpoint string, dst *os.File) error {
 	if resp.StatusCode != http.StatusOK {
 		Fail(fmt.Sprintf("get %s: status code: %d", endpoint, resp.StatusCode))
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	return doWithProgress("downloading", resp.Body, dst, resp.ContentLength)
 }
 
@@ -65,7 +69,9 @@ func copyWithProgress(srcPath string, dst *os.File) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	return doWithProgress("copying", f, dst, s.Size())
 }
 
