@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/containers/libhvee/pkg/hypervctl"
-	"github.com/containers/storage/pkg/stringid"
 	. "github.com/onsi/ginkgo/v2"
+	"go.podman.io/storage/pkg/stringid"
 )
 
 const defaultDiskSize = 5
