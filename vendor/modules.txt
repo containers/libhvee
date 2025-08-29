@@ -1,13 +1,6 @@
 # github.com/Masterminds/semver/v3 v3.3.1
 ## explicit; go 1.21
 github.com/Masterminds/semver/v3
-# github.com/containers/common v0.64.1
-## explicit; go 1.23.3
-github.com/containers/common/pkg/strongunits
-# github.com/containers/storage v1.59.1
-## explicit; go 1.23.0
-github.com/containers/storage/pkg/regexp
-github.com/containers/storage/pkg/stringid
 # github.com/go-logr/logr v1.4.3
 ## explicit; go 1.18
 github.com/go-logr/logr
@@ -31,7 +24,7 @@ github.com/google/pprof/profile
 # github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 ## explicit
 github.com/mitchellh/colorstring
-# github.com/onsi/ginkgo/v2 v2.25.0
+# github.com/onsi/ginkgo/v2 v2.25.1
 ## explicit; go 1.23.0
 github.com/onsi/ginkgo/v2
 github.com/onsi/ginkgo/v2/config
@@ -81,6 +74,13 @@ github.com/ulikunitz/xz
 github.com/ulikunitz/xz/internal/hash
 github.com/ulikunitz/xz/internal/xlog
 github.com/ulikunitz/xz/lzma
+# go.podman.io/common v0.0.0-20250826054041-6e4bed3c9118
+## explicit; go 1.23.3
+go.podman.io/common/pkg/strongunits
+# go.podman.io/storage v1.59.1-0.20250820085751-a13b38f45723
+## explicit; go 1.23.3
+go.podman.io/storage/pkg/regexp
+go.podman.io/storage/pkg/stringid
 # go.uber.org/automaxprocs v1.6.0
 ## explicit; go 1.20
 go.uber.org/automaxprocs

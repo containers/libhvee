@@ -5,14 +5,14 @@ go 1.23.3
 toolchain go1.23.9
 
 require (
-	github.com/containers/common v0.64.1
-	github.com/containers/storage v1.59.1
 	github.com/go-ole/go-ole v1.3.0
-	github.com/onsi/ginkgo/v2 v2.25.0
+	github.com/onsi/ginkgo/v2 v2.25.1
 	github.com/onsi/gomega v1.38.0
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/ulikunitz/xz v0.5.13
+	go.podman.io/common v0.0.0-20250826054041-6e4bed3c9118
+	go.podman.io/storage v1.59.1-0.20250820085751-a13b38f45723
 	golang.org/x/sys v0.35.0
 )
 
