@@ -10,7 +10,7 @@ require (
 	github.com/onsi/gomega v1.38.0
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/sirupsen/logrus v1.9.3
-	github.com/ulikunitz/xz v0.5.14
+	github.com/ulikunitz/xz v0.5.15
 	go.podman.io/common v0.0.0-20250826054041-6e4bed3c9118
 	go.podman.io/storage v1.59.1-0.20250820085751-a13b38f45723
 	golang.org/x/sys v0.35.0
