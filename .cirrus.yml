@@ -2,7 +2,7 @@ env:
     IMAGE_SUFFIX: "c20250422t130822z-f42f41d13"
     WINDOWS_AMI: "win-server-wsl-${IMAGE_SUFFIX}"
 
-aws_credentials: ENCRYPTED[1659bb9d94b525492b4cab3f3e9a2ad8708fd6c23e821818b59875bd9b521b11080ce1bf11dbd46876978e70a99ef118]
+aws_credentials: ENCRYPTED[4c7fbb2634d50a93caf7870ac4039047fc2834382a3ad5200863e40af7b00812aa0fef9e46737a65c356661410788f80]
 
 win_test_task:
     name: win_test
