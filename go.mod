@@ -5,7 +5,6 @@ go 1.23.3
 toolchain go1.23.9
 
 require (
-	github.com/go-ole/go-ole v1.3.0
 	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/onsi/gomega v1.38.2
 	github.com/schollz/progressbar/v3 v3.18.0
