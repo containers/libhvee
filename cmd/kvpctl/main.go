@@ -12,6 +12,7 @@ import (
 
 	"github.com/containers/libhvee/pkg/hypervctl"
 	"github.com/containers/libhvee/pkg/kvp/ginsu"
+	"github.com/containers/libhvee/pkg/powershell"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows"
 )
@@ -66,6 +67,14 @@ func main() {
 	if lenArgs < 2 {
 		fmt.Printf("error: virtual machine name or command not provided\n")
 		printHelp()
+	}
+
+	if err := powershell.HypervAvailable(); err != nil {
+		panic(err)
+	}
+
+	if !powershell.IsHypervAdministrator() {
+		panic(powershell.ErrNotAdministrator)
 	}
 
 	subCmd := getSubCommand(os.Args[2])

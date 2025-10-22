@@ -1,5 +1,4 @@
 //go:build windows
-// +build windows
 
 package main
 
@@ -9,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/containers/libhvee/pkg/hypervctl"
+	"github.com/containers/libhvee/pkg/powershell"
 )
 
 func main() {
@@ -18,6 +18,14 @@ func main() {
 		fmt.Printf("Example: \n\t%s my-vm c:\\Users\\Bob\\drive.vhdx c:\\Users\\Bob\\cd.iso\n\n", os.Args[0])
 
 		return
+	}
+
+	if err := powershell.HypervAvailable(); err != nil {
+		panic(err)
+	}
+
+	if !powershell.IsHypervAdministrator() {
+		panic(powershell.ErrNotAdministrator)
 	}
 
 	vmName := os.Args[1]
@@ -37,21 +45,28 @@ func main() {
 		}
 	}
 
+	if exists, err := vmm.Exists(vmName); err != nil {
+		panic(err)
+	} else if exists {
+		panic(fmt.Errorf("machine %s already exists", vmName))
+	}
+
 	// System
 	systemSettings, err := hypervctl.NewSystemSettingsBuilder().
 		PrepareSystemSettings(vmName, nil).
 		PrepareMemorySettings(func(ms *hypervctl.MemorySettings) {
 			ms.DynamicMemoryEnabled = true
-			ms.VirtualQuantity = 8192 // Startup memory
-			ms.Reservation = 1024     // min
-			ms.Limit = 16384          // max
+			ms.StartupBytes = 8192 * 1024 * 1024 // 8GB
+			ms.MinimumBytes = 1024 * 1024 * 1024 // 1GB
+			ms.MaximumBytes = 16384 * 1024 * 1024 // 16GB
 		}).
 		PrepareProcessorSettings(func(ps *hypervctl.ProcessorSettings) {
-			ps.VirtualQuantity = 4 // 4 cores
+			ps.Count = 4 // 4 cores
 		}).
 		Build()
 
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "error building system settings: %s\n", err)
 		panic(err)
 	}
 
@@ -60,7 +75,7 @@ func main() {
 	err = hypervctl.NewDriveSettingsBuilder(systemSettings).
 		AddScsiController().
 		AddSyntheticDiskDrive(0).
-		DefineVirtualHardDisk(vhdxFile, func(vhdss *hypervctl.VirtualHardDiskStorageSettings) {
+		DefineVirtualHardDisk(vhdxFile, func(vhdss *hypervctl.HardDiskDriveSettings) {
 			// set extra params like
 			// vhdss.IOPSLimit = 5000
 		}).
@@ -94,11 +109,8 @@ func main() {
 		panic(err)
 	}
 
-	if err = vm.AddKeyValuePair("fun", "pair"); err != nil {
-		panic(err)
-	}
 
-	fmt.Println(vm.Path())
+	fmt.Println(vm.Name)
 
 	fmt.Println("Done!")
 }

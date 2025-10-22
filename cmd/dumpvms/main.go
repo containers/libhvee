@@ -1,5 +1,4 @@
 //go:build windows
-// +build windows
 
 package main
 
@@ -9,6 +8,7 @@ import (
 	"os"
 
 	"github.com/containers/libhvee/pkg/hypervctl"
+	"github.com/containers/libhvee/pkg/powershell"
 )
 
 const (
@@ -31,7 +31,7 @@ func getVms() (string, error) {
 
 func dumpSummary() (string, error) {
 	vmms := hypervctl.VirtualMachineManager{}
-	summs, err := vmms.GetSummaryInformation(hypervctl.SummaryRequestNearAll)
+	summs, err := vmms.GetSummaryInformation()
 	if err != nil {
 		return "", fmt.Errorf("Could not retrieve virtual machine summaries: %v\n", err) // nolint:staticcheck
 	}
@@ -51,6 +51,14 @@ func main() {
 		err    error
 		result string
 	)
+	if err := powershell.HypervAvailable(); err != nil {
+		panic(err)
+	}
+
+	if !powershell.IsHypervAdministrator() {
+		panic(powershell.ErrNotAdministrator)
+	}
+	
 	args := os.Args
 	if len(args) != 2 {
 		printHelp()
