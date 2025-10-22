@@ -41,7 +41,7 @@ var _ = Describe("basic operation test", func() {
 		defer removeOnError(tvm)
 
 		Expect(tvm.vm.IsStarting()).To(BeFalse())
-		Expect(tvm.vm.State()).To(Equal(hypervctl.Disabled))
+		Expect(tvm.vm.State).To(Equal(hypervctl.Disabled))
 
 		// start the vm
 		err = tvm.vm.Start()
@@ -49,7 +49,7 @@ var _ = Describe("basic operation test", func() {
 
 		err = tvm.refresh()
 		Expect(err).To(BeNil())
-		Expect(tvm.vm.State()).To(Equal(hypervctl.Enabled))
+		Expect(tvm.vm.State).To(Equal(hypervctl.Enabled))
 
 		// TODO I get an error when trying to immediately stop a VM so this is a placeholder
 		// for "wait"
@@ -60,7 +60,7 @@ var _ = Describe("basic operation test", func() {
 		Expect(err).To(BeNil())
 		err = tvm.refresh()
 		Expect(err).To(BeNil())
-		Expect(tvm.vm.State()).To(Equal(hypervctl.Disabled))
+		Expect(tvm.vm.State).To(Equal(hypervctl.Disabled))
 
 		// remove the vm
 		err = tvm.vm.Remove(tvm.config.DiskPath)
