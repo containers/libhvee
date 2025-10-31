@@ -9,9 +9,18 @@ import (
 	"strconv"
 
 	"github.com/containers/libhvee/pkg/hypervctl"
+	"github.com/containers/libhvee/pkg/powershell"
 )
 
 func main() {
+
+	if err := powershell.HypervAvailable(); err != nil {
+		panic(err)
+	}
+
+	if !powershell.IsHypervAdministrator() {
+		panic(powershell.ErrNotAdministrator)
+	}
 
 	if len(os.Args) < 4 {
 		fmt.Printf("Usage: %s <vm name> <cores> <static mem>\n\n", os.Args[0])
@@ -37,12 +46,12 @@ func main() {
 	}
 
 	err = vm.UpdateProcessorMemSettings(func(ps *hypervctl.ProcessorSettings) {
-		ps.VirtualQuantity = cores
+		ps.Count = int64(cores)
 	}, func(ms *hypervctl.MemorySettings) {
 		ms.DynamicMemoryEnabled = false
-		ms.VirtualQuantity = mem
-		ms.Limit = mem
-		ms.Reservation = mem
+		ms.StartupBytes = mem
+		ms.MaximumBytes = mem
+		ms.MinimumBytes = mem
 	})
 	if err != nil {
 		panic(err)
