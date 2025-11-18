@@ -2,7 +2,11 @@ env:
     IMAGE_SUFFIX: "c20250422t130822z-f42f41d13"
     WINDOWS_AMI: "win-server-wsl-${IMAGE_SUFFIX}"
 
-aws_credentials: ENCRYPTED[1659bb9d94b525492b4cab3f3e9a2ad8708fd6c23e821818b59875bd9b521b11080ce1bf11dbd46876978e70a99ef118]
+aws_credentials:
+  role_arn: arn:aws:iam::449134212816:role/AssumeRoleForGithubRepo
+  role_session_name: cirrus # an identifier for the assumed role session
+  region: us-east-2 # region to use for calling the STS 
+
 
 win_test_task:
     name: win_test
