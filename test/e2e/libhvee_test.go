@@ -56,7 +56,7 @@ func addHeaders(getReq *http.Request) {
 	getReq.Header.Set("Accept-Encoding", "gzip, deflate, br")
 	getReq.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	getReq.Header.Set("Connection", "keep-alive")
-	getReq.Header.Set("Referer", "https://kojipkgs.fedoraproject.org/compose/cloud/latest-Fedora-Cloud-41/compose")
+	getReq.Header.Set("Referer", "https://kojipkgs.fedoraproject.org/compose/cloud/latest-Fedora-Cloud-42/compose")
 	getReq.Header.Set("Sec-Ch-Ua-Mobile", "?0")
 	getReq.Header.Set("Sec-Ch-Ua-Platform", "macOS")
 	getReq.Header.Set("Sec-Fetch-Dest", "document")
