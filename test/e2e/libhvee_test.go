@@ -27,10 +27,18 @@ func TestLibhvee(t *testing.T) {
 }
 
 func get(endpoint string) ([]byte, error) {
-	resp, err := http.Get(endpoint)
+
+	getReq, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
+	addHeaders(getReq)
+
+	resp, err := http.DefaultClient.Do(getReq)
+	if err != nil {
+		return nil, err
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		Fail(fmt.Sprintf("get %s: status code: %d", endpoint, resp.StatusCode))
 	}
@@ -41,12 +49,30 @@ func get(endpoint string) ([]byte, error) {
 	return body, err
 }
 
+// these headers are required to bypass anubis bot protection
+// maybe subject to change if the bot protection is updated
+func addHeaders(getReq *http.Request) {
+	getReq.Header.Set("Accept", "application/json")
+	getReq.Header.Set("Accept-Encoding", "gzip, deflate, br")
+	getReq.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	getReq.Header.Set("Connection", "keep-alive")
+	getReq.Header.Set("Referer", "https://kojipkgs.fedoraproject.org/compose/cloud/latest-Fedora-Cloud-42/compose")
+	getReq.Header.Set("Sec-Ch-Ua-Mobile", "?0")
+	getReq.Header.Set("Sec-Ch-Ua-Platform", "macOS")
+	getReq.Header.Set("Sec-Fetch-Dest", "document")
+	getReq.Header.Set("Sec-Fetch-Mode", "navigate")
+	getReq.Header.Set("Sec-Fetch-Site", "same-origin")
+	getReq.Header.Set("Sec-User", "?1")
+	getReq.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36")
+}
+
 func pullWithProgress(endpoint string, dst *os.File) error {
 	fmt.Println("trying to pull: ", endpoint)
 	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		Fail(err.Error())
 	}
+	addHeaders(req)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		Fail(err.Error())

@@ -1,5 +1,4 @@
 //go:build windows
-// +build windows
 
 package main
 
@@ -9,12 +8,21 @@ import (
 	"strconv"
 
 	"github.com/containers/libhvee/pkg/hypervctl"
+	"github.com/containers/libhvee/pkg/powershell"
 )
 
 func main() {
 
+	if err := powershell.HypervAvailable(); err != nil {
+		panic(err)
+	}
+
+	if !powershell.IsHypervAdministrator() {
+		panic(powershell.ErrNotAdministrator)
+	}
+
 	if len(os.Args) < 4 {
-		fmt.Printf("Usage: %s <vm name> <cores> <static mem>\n\n", os.Args[0])
+		fmt.Printf("Usage: %s <vm name> <cores> <static mem in MB>\n\n", os.Args[0])
 
 		return
 	}
@@ -37,12 +45,12 @@ func main() {
 	}
 
 	err = vm.UpdateProcessorMemSettings(func(ps *hypervctl.ProcessorSettings) {
-		ps.VirtualQuantity = cores
+		ps.Count = int64(cores)
 	}, func(ms *hypervctl.MemorySettings) {
 		ms.DynamicMemoryEnabled = false
-		ms.VirtualQuantity = mem
-		ms.Limit = mem
-		ms.Reservation = mem
+		ms.StartupBytes = mem * 1024 * 1024
+		ms.MaximumBytes = mem * 1024 * 1024
+		ms.MinimumBytes = mem * 1024 * 1024
 	})
 	if err != nil {
 		panic(err)

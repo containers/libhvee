@@ -9,6 +9,7 @@ function Binaries{
     Run-Command "go build -o bin ./cmd/dumpvms"
     Run-Command "go build -o bin ./cmd/createvm"
     Run-Command "go build -o bin ./cmd/updatevm"
+    Run-Command "go build -o bin ./cmd/managevm"
 }
 
 function Make-Clean{
