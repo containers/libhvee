@@ -67,8 +67,8 @@ github.com/rivo/uniseg
 # github.com/schollz/progressbar/v3 v3.18.0
 ## explicit; go 1.22
 github.com/schollz/progressbar/v3
-# github.com/sirupsen/logrus v1.9.3
-## explicit; go 1.13
+# github.com/sirupsen/logrus v1.9.4
+## explicit; go 1.17
 github.com/sirupsen/logrus
 # github.com/ulikunitz/xz v0.5.15
 ## explicit; go 1.12
