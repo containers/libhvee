@@ -27,7 +27,15 @@ func TestLibhvee(t *testing.T) {
 }
 
 func get(endpoint string) ([]byte, error) {
-	resp, err := http.Get(endpoint)
+	req, err := http.NewRequest("GET", endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "curl/8.15.0")
+	req.Header.Set("Accept", "*/*")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +55,8 @@ func pullWithProgress(endpoint string, dst *os.File) error {
 	if err != nil {
 		Fail(err.Error())
 	}
+	req.Header.Set("User-Agent", "curl/8.15.0")
+	req.Header.Set("Accept", "*/*")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		Fail(err.Error())

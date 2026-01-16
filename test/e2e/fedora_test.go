@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	fedoraBaseDirEndpoint = "https://kojipkgs.fedoraproject.org/compose/cloud/latest-Fedora-Cloud-41/compose"
+	fedoraBaseDirEndpoint = "https://kojipkgs.fedoraproject.org/compose/cloud/latest-Fedora-Cloud-43/compose"
 )
 
 // Fedora metadata for cloud downloads
