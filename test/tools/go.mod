@@ -4,7 +4,7 @@ go 1.23.0
 
 toolchain go1.23.7
 
-require github.com/onsi/ginkgo/v2 v2.27.2
+require github.com/onsi/ginkgo/v2 v2.27.5
 
 require (
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
