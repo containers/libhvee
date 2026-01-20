@@ -4,14 +4,19 @@ package wmiext
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
 type JobError struct {
-	ErrorCode int
+	ErrorCode   int
+	Description string
 }
 
 func (err *JobError) Error() string {
+	if err.Description != "" {
+		return fmt.Sprintf("Job failed with error code: %d. Description: %s", err.ErrorCode, err.Description)
+	}
 	return fmt.Sprintf("Job failed with error code: %d", err.ErrorCode)
 }
 
@@ -45,7 +50,17 @@ func WaitJob(service *Service, job *Instance) error {
 	}
 
 	if result.(int32) != 0 {
-		return &JobError{ErrorCode: int(result.(int32))}
+		desc := ""
+
+		if desc, err = job.GetAsString("ErrorDescription"); err == nil {
+			desc = strings.ReplaceAll(desc, "\n", " ")
+			desc = strings.TrimSpace(desc)
+		}
+
+		return &JobError{
+			ErrorCode:   int(result.(int32)),
+			Description: desc,
+		}
 	}
 
 	return nil
