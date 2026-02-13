@@ -2,7 +2,10 @@ env:
     IMAGE_SUFFIX: "c20250422t130822z-f42f41d13"
     WINDOWS_AMI: "win-server-wsl-${IMAGE_SUFFIX}"
 
-aws_credentials: ENCRYPTED[4c7fbb2634d50a93caf7870ac4039047fc2834382a3ad5200863e40af7b00812aa0fef9e46737a65c356661410788f80]
+aws_credentials:
+    role_arn: arn:aws:iam::449134212816:role/libhvee-ci-role
+    role_session_name: cirrus
+    region: us-east-1
 
 win_test_task:
     name: win_test
