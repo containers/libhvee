@@ -16,8 +16,9 @@ win_test_task:
     ec2_instance:
         image: "${WINDOWS_AMI}"
         region: us-east-1
-        type: m5zn.metal
+        type: m5.2xlarge
         platform: windows
+        spot: true
     env:
         CIRRUS_WORKING_DIR: "${LOCALAPPDATA}\\cirrus-ci-build"
         CIRRUS_SHELL: powershell
