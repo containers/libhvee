@@ -18,6 +18,7 @@ win_test_task:
         region: us-east-1
         type: m5zn.metal
         platform: windows
+        spot: true
     env:
         CIRRUS_WORKING_DIR: "${LOCALAPPDATA}\\cirrus-ci-build"
         CIRRUS_SHELL: powershell
