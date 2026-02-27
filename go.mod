@@ -13,7 +13,7 @@ require (
 	github.com/ulikunitz/xz v0.5.15
 	go.podman.io/common v0.0.0-20250901164813-7046ad001ce8
 	go.podman.io/storage v1.59.1-0.20250820085751-a13b38f45723
-	golang.org/x/sys v0.40.0
+	golang.org/x/sys v0.41.0
 )
 
 require (
