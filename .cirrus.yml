@@ -1,5 +1,5 @@
 env:
-    IMAGE_SUFFIX: "c20250422t130822z-f42f41d13"
+    IMAGE_SUFFIX: "c20260310t170224z-f43f42d14"
     WINDOWS_AMI: "win-server-wsl-${IMAGE_SUFFIX}"
 
 aws_credentials:
