@@ -1,6 +1,11 @@
 
 # Release Notes
 
+## 0.11.0
+* DVD Drive Support(422aa7d): Added ability to attach DVD devices when creating VMs, useful for delivering cloud-init configuration via ISO
+* Improved Error Messages(567e418): Enhanced Hyper-V job errors to display detailed error descriptions instead of just error codes
+* Go Dependency updates
+
 ## 0.10.0
 * Add check for JSON formatting on ign files (#187)
 * Go Dependency updates
