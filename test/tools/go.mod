@@ -2,7 +2,7 @@ module github.com/containers/libhvee/test/tools
 
 go 1.25.0
 
-require github.com/onsi/ginkgo/v2 v2.28.3
+require github.com/onsi/ginkgo/v2 v2.29.0
 
 require (
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
