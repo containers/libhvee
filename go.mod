@@ -6,12 +6,12 @@ require (
 	github.com/go-ole/go-ole v1.3.0
 	github.com/onsi/ginkgo/v2 v2.29.0
 	github.com/onsi/gomega v1.40.0
-	github.com/schollz/progressbar/v3 v3.19.0
+	github.com/schollz/progressbar/v3 v3.19.1
 	github.com/sirupsen/logrus v1.9.4
 	github.com/ulikunitz/xz v0.5.15
 	go.podman.io/common v0.0.0-20250901164813-7046ad001ce8
 	go.podman.io/storage v1.59.1-0.20250820085751-a13b38f45723
-	golang.org/x/sys v0.44.0
+	golang.org/x/sys v0.46.0
 )
 
 require (
@@ -26,7 +26,7 @@ require (
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/term v0.42.0 // indirect
+	golang.org/x/term v0.44.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
 	golang.org/x/tools v0.44.0 // indirect
 )
