@@ -1,0 +1,5 @@
+version: 2
+
+run:
+  skip-dirs:
+    - test/e2e

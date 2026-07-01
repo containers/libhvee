@@ -14,7 +14,7 @@ bin/golangci-lint:
 
 .PHONY: validate
 validate: bin/golangci-lint
-	./bin/golangci-lint run  --skip-dirs "test/e2e"
+	./bin/golangci-lint run
 
 .PHONY: build
 build: validate bin bin/kvpctl.exe bin/dumpvms.exe bin/createvm.exe bin/updatevm.exe
