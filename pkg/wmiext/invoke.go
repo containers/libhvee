@@ -51,7 +51,7 @@ func (e *MethodExecutor) Out(name string, value interface{}) *MethodExecutor {
 		var cimType CIMTYPE_ENUMERATION
 		var result interface{}
 		dest := reflect.ValueOf(value)
-		if dest.Kind() != reflect.Ptr {
+		if dest.Kind() != reflect.Pointer {
 			e.err = fmt.Errorf("Out() on %q called with %T, out parameters must be a reference", name, value)
 			return e
 		}

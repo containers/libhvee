@@ -302,7 +302,7 @@ func (i *Instance) GetCimText() string {
 // will return an error otherwise.
 func (i *Instance) GetAll(target interface{}) error {
 	elem := reflect.ValueOf(target)
-	if elem.Kind() != reflect.Ptr || elem.IsNil() {
+	if elem.Kind() != reflect.Pointer || elem.IsNil() {
 		return errors.New("invalid destination type for mapping a WMI instance to an object")
 	}
 
