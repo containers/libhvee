@@ -16,7 +16,7 @@ function install() {
     fi
     echo $msg
 
-    curl -sSL --retry 5 https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v$VERSION
+    curl -sSL --retry 5 https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s v$VERSION
 }
 
 # Undocumented behavior: golangci-lint installer requires $BINDIR in env,
