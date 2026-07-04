@@ -1,0 +1,184 @@
+name: tester
+
+on:
+  workflow_run:
+    workflows: 
+      - builder
+    types:
+      - completed
+
+env:
+  STATUS_CONTEXT: tester/e2e/windows-desktop
+
+jobs:
+  e2e-windows-destkop:
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write # needed to update commit status (pending/failure/sucess)
+      checks: write # as documented in https://github.com/mikepenz/action-junit-report?tab=readme-ov-file#pr-run-permissions
+    strategy:
+      fail-fast: false
+      matrix:
+        windows-version: ['10','11']
+        windows-featurepack: ['22h2-ent', '23h2-ent']
+        exclude:
+        - windows-version: '10'
+          windows-featurepack: '23h2-ent'
+        - windows-version: '11'
+          windows-featurepack: '22h2-ent'
+
+    steps:
+    - name: Get context  
+      id: download-gh-context-artifact
+      uses: dawidd6/action-download-artifact@v3
+      with:
+        workflow: ${{ github.event.workflow_run.workflow_id }}
+        name: gh_context
+
+    - name: Correlate with PR
+      run: |
+        set -xuo
+        # SHA used as ID to correlate artifacts between buld-tests, windows-installer, and windows-e2e workflows
+        echo "SHA=$(cat gh_context.json | jq -r '.sha')" >> "$GITHUB_ENV"
+        COMMIT_ID=$(cat gh_context.json | jq -r '.event.after')
+        # if this is a new PR, .event.after is empty, use .sha instead in that case
+        if [[ -z "$COMMIT_ID" ]]; then
+          COMMIT_ID=$(cat gh_context.json | jq -r '.sha')
+        fi
+        # COMMIT_SHA used to identify commit whose status needs to be set to reflect test results
+        echo "COMMIT_SHA=$COMMIT_ID" >> "$GITHUB_ENV"
+
+    - name: Add status to PR
+      run: |
+        OUTCOME="pending"
+        DESCRIPTION="Running e2e on Windows Desktop"
+        CONTEXT="${{ env.STATUS_CONTEXT}}-${{ matrix.windows-version }}-${{ matrix.windows-featurepack }}"
+
+        # post result to commit status
+        curl -L -v \
+        -X POST \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: Bearer ${{ github.token }}" \
+        https://api.github.com/repos/${{ github.repository }}/statuses/${{ env.COMMIT_SHA }} \
+        -d "{\"state\":\"${OUTCOME}\", \"description\":\"${DESCRIPTION}\", \"context\":\"${CONTEXT}\", \"target_url\":\"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}"
+
+    - name: Get libhvee e2e oci image from PR as artifact
+      id: download-oci-image-artifact
+      uses: dawidd6/action-download-artifact@v3
+      with:
+        workflow_conclusion: completed
+        workflow: builder.yml
+        name: libhvee-e2e-v${{ env.SHA }}
+
+    - name: Get libhvee binaries from PR as artifact
+      id: download-binaries-artifact
+      uses: dawidd6/action-download-artifact@v3
+      with:
+        workflow_conclusion: completed
+        workflow: builder.yml
+        name: libhvee-v${{ env.SHA }}
+
+
+    - name: Create instance
+      run: |
+        # Create instance
+        podman run -d --name windows-create --rm \
+          -v ${PWD}:/workspace:z \
+          -e ARM_TENANT_ID=${{ secrets.ARM_TENANT_ID }} \
+          -e ARM_SUBSCRIPTION_ID=${{ secrets.ARM_SUBSCRIPTION_ID }} \
+          -e ARM_CLIENT_ID=${{ secrets.ARM_CLIENT_ID }} \
+          -e ARM_CLIENT_SECRET='${{ secrets.ARM_CLIENT_SECRET }}' \
+          -e AZURE_STORAGE_ACCOUNT='${{ secrets.AZURE_STORAGE_ACCOUNT }}' \
+          -e AZURE_STORAGE_KEY='${{ secrets.AZURE_STORAGE_KEY }}' \
+          quay.io/rhqp/qenvs:v0.6.1 azure \
+            windows create \
+            --project-name 'windows-desktop-${{ matrix.windows-version }}-${{ matrix.windows-featurepack }}' \
+            --backed-url azblob://qenvs-state/${{ env.SHA }} \
+            --conn-details-output '/workspace' \
+            --windows-version '${{ matrix.windows-version }}' \
+            --windows-featurepack '${{ matrix.windows-featurepack }}' \
+            --tags org=containers,project=libhvee,origin=ghaction \
+            --spot
+        # Check logs 
+        podman logs -f windows-create
+
+    - name: Run libhvee e2e
+      run: |
+        # Load image from artifact
+        podman load -i libhvee-e2e.tar
+
+        # Run container
+        podman run --rm -d --name libhvee-e2e \
+          -v $PWD:/workspace:z \
+          -v $PWD/createvm.exe:/opt/libhvee-e2e/createvm.exe:z \
+          -v $PWD/dumpvms.exe:/opt/libhvee-e2e/dumpvms.exe:z \
+          -v $PWD/kvpctl.exe:/opt/libhvee-e2e/kvpctl.exe:z \
+          -v $PWD/updatevm.exe:/opt/libhvee-e2e/updatevm.exe:z \
+          -e PLATFORM=windows \
+          -e TARGET_HOST=$(cat host) \
+          -e TARGET_HOST_USERNAME=$(cat username) \
+          -e TARGET_HOST_KEY_PATH=/workspace/id_rsa \
+          -e TARGET_FOLDER=libhvee-e2e \
+          -e TARGET_RESULTS=libhvee-e2e.xml \
+          -e OUTPUT_FOLDER=/workspace \
+          -e DEBUG=true \
+          quay.io/rhqp/libhvee-e2e:v${{ env.SHA }} \
+            libhvee-e2e/run.ps1 \
+              -targetFolder libhvee-e2e \
+              -junitResultsFilename libhvee-e2e.xml
+        # Check logs
+        podman logs -f libhvee-e2e
+
+    - name: Test Report
+      if: always()
+      id: test-report
+      uses: mikepenz/action-junit-report@v4
+      with:
+        fail_on_failure: true
+        include_passed: true
+        detailed_summary: true
+        require_tests:  true
+        report_paths: libhvee-e2e.xml
+
+    - name: Upload libhvee e2e results
+      uses: actions/upload-artifact@v4
+      with:
+        name: libhvee-e2e-${{ matrix.windows-version }}${{ matrix.windows-featurepack }}
+        path: libhvee-e2e.xml
+
+    - name: Result status to PR
+      if: always()
+      run: |
+        OUTCOME="success"
+        if [[ ${{steps.test-report.outcome}} != "success" ]]; then 
+          OUTCOME="failure";
+        fi
+        DESCRIPTION="Finished e2e on Windows e2e"
+        CONTEXT="${{ env.STATUS_CONTEXT}}-${{ matrix.windows-version }}-${{ matrix.windows-featurepack }}"
+
+        # post result to commit status
+        curl -L -v \
+        -X POST \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: Bearer ${{ github.token }}" \
+        https://api.github.com/repos/${{ github.repository }}/statuses/${{ env.COMMIT_SHA }} \
+        -d "{\"state\":\"${OUTCOME}\", \"description\":\"${DESCRIPTION}\", \"context\":\"${CONTEXT}\", \"target_url\":\"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}"
+
+    - name: Destroy instance
+      if: always()
+      run: |
+        # Destroy instance
+        podman run -d --name windows-destroy --rm \
+          -v ${PWD}:/workspace:z \
+          -e ARM_TENANT_ID=${{ secrets.ARM_TENANT_ID }} \
+          -e ARM_SUBSCRIPTION_ID=${{ secrets.ARM_SUBSCRIPTION_ID }} \
+          -e ARM_CLIENT_ID=${{ secrets.ARM_CLIENT_ID }} \
+          -e ARM_CLIENT_SECRET='${{ secrets.ARM_CLIENT_SECRET }}' \
+          -e AZURE_STORAGE_ACCOUNT='${{ secrets.AZURE_STORAGE_ACCOUNT }}' \
+          -e AZURE_STORAGE_KEY='${{ secrets.AZURE_STORAGE_KEY }}' \
+          quay.io/rhqp/qenvs:v0.6.1 azure \
+            windows destroy \
+            --project-name 'windows-desktop-${{ matrix.windows-version }}-${{ matrix.windows-featurepack }}' \
+            --backed-url azblob://qenvs-state/${{ env.SHA }}
+        # Check logs
+        podman logs -f windows-destroy
