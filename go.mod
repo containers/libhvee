@@ -7,7 +7,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.42.1
 	github.com/schollz/progressbar/v3 v3.19.1
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.1
 	github.com/ulikunitz/xz v0.5.16
 	go.podman.io/common v0.0.0-20250901164813-7046ad001ce8
 	go.podman.io/storage v1.59.1-0.20250820085751-a13b38f45723
