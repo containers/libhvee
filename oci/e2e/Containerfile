@@ -1,0 +1,23 @@
+
+FROM registry.access.redhat.com/ubi9/go-toolset:1.18 as builder 
+
+COPY . .
+
+ARG OS 
+ARG ARCH
+
+RUN GOOS=${OS} GOARCH=${ARCH} go test -v test/e2e/*.go -c -o ./build/libhvee-e2e.exe
+
+FROM quay.io/rhqp/deliverest:v0.0.3
+
+ARG OS 
+ARG ARCH
+
+ENV ASSETS_FOLDER=/opt/libhvee-e2e \
+    OS=${OS} \
+    ARCH=${ARCH}
+
+# LABEL org.opencontainpoders.image.authors="Adrian Riobo<ariobolo@redhat.com>"
+
+COPY --from=builder /opt/app-root/src/build/libhvee-e2e.exe ${ASSETS_FOLDER}/
+COPY oci/e2e/run.ps1 ${ASSETS_FOLDER}/
