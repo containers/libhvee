@@ -1,6 +1,6 @@
 module github.com/containers/libhvee
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/go-ole/go-ole v1.3.0
@@ -11,7 +11,7 @@ require (
 	github.com/ulikunitz/xz v0.5.16
 	go.podman.io/common v0.0.0-20250901164813-7046ad001ce8
 	go.podman.io/storage v1.59.1-0.20250820085751-a13b38f45723
-	golang.org/x/sys v0.47.0
+	golang.org/x/sys v0.48.0
 )
 
 require (
