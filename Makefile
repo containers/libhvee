@@ -1,6 +1,9 @@
 export GOOS=windows
 export GOARCH=amd64
 SRC = $(shell find . -type f -name '*.go')
+VERSION ?= 0.0.1
+IMG ?= quay.io/rhqp/libhvee-e2e:v${VERSION}
+CONTAINER_MANAGER ?= podman
 
 .PHONY: default
 default: build
@@ -43,3 +46,7 @@ bin/updatevm.exe: $(SRC) go.mod go.sum
 
 clean:
 	rm -rf bin
+
+.PHONY: build-oci-e2e
+build-oci-e2e: 
+	${CONTAINER_MANAGER} build -t ${IMG} -f oci/e2e/Containerfile --build-arg=OS=${GOOS} --build-arg=ARCH=${GOARCH} .
